@@ -1,0 +1,1033 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+    --navy-900: #0f172a;
+    --navy-800: #1e293b;
+    --navy-700: #334155;
+    --gold-500: #f59e0b;
+    --slate-50: #f8fafc;
+    --slate-100: #f1f5f9;
+    --slate-200: #e2e8f0;
+    --slate-300: #cbd5e1;
+    --slate-400: #94a3b8;
+    --slate-500: #64748b;
+    --slate-600: #475569;
+}
+
+body {
+    background-color: #f1f5f9;
+    /* Lighter background for the dashboard feel */
+    color: var(--navy-800);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* --- SCROLLBARS --- */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--slate-300);
+    border-radius: 3px;
+    transition: background 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--slate-400);
+}
+
+/* --- CALENDAR CELL --- */
+.cell {
+    position: relative;
+    height: 52px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 4px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease-out;
+    border: 1px solid transparent;
+}
+
+.cell:hover {
+    background-color: var(--slate-100);
+    transform: translateY(-1px);
+    z-index: 5;
+}
+
+.cell.today {
+    background-color: var(--navy-900);
+    color: white;
+    font-weight: 700;
+    box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.25);
+}
+
+.cell.vac {
+    background-image: repeating-linear-gradient(45deg, var(--slate-50), var(--slate-50) 5px, var(--slate-100) 5px, var(--slate-100) 6px);
+    color: var(--slate-400);
+}
+
+.cell.sick {
+    background-image: repeating-linear-gradient(45deg, #fef2f2, #fef2f2 5px, #fee2e2 5px, #fee2e2 6px);
+    color: #ef4444;
+    border: 1px solid #fecaca;
+}
+
+.cell.weekend {
+    background-color: var(--slate-50);
+    color: var(--slate-400);
+}
+
+.cell.sem-start {
+    border-left: 3px solid var(--gold-500);
+    background-color: #fffbeb;
+}
+
+.cell.sem-start::after {
+    content: "II SEM";
+    position: absolute;
+    top: -8px;
+    left: -4px;
+    font-size: 8px;
+    font-weight: 800;
+    color: #fff;
+    background: #d97706;
+    padding: 2px 4px;
+    border-radius: 3px;
+    z-index: 20;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.cell.sem-end {
+    border-right: 3px solid #ef4444;
+    background-color: #fef2f2;
+}
+
+.cell.sem-end::after {
+    content: "PABAIGA";
+    position: absolute;
+    bottom: -8px;
+    right: -4px;
+    font-size: 8px;
+    font-weight: 800;
+    color: #fff;
+    background: #ef4444;
+    padding: 2px 4px;
+    border-radius: 3px;
+    z-index: 20;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* --- MARKERS (Dots/Bars) --- */
+.markers-col {
+    display: flex;
+    flex-direction: row;
+    gap: 2px;
+    margin-top: auto;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px 4px 6px;
+    flex-wrap: wrap;
+}
+
+.marker-bar {
+    height: 3px;
+    width: 100%;
+    border-radius: 1.5px;
+}
+
+.cell.today .marker-bar {
+    border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+/* --- LAYOUT UTILS --- */
+.sticky-col {
+    position: sticky;
+    top: 80px;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+/* --- FLATPICKR CUSTOM (PREMIUM THEME) --- */
+.flatpickr-calendar {
+    font-family: 'Inter', sans-serif;
+    border: 0 !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+    border-radius: 16px !important;
+    padding: 12px !important;
+    background: #ffffff !important;
+    width: 320px !important;
+}
+
+.flatpickr-calendar::before,
+.flatpickr-calendar::after {
+    display: none !important;
+}
+
+.flatpickr-months {
+    margin-bottom: 12px !important;
+    align-items: center !important;
+}
+
+.flatpickr-month {
+    background: transparent !important;
+    color: var(--navy-900) !important;
+    fill: var(--navy-900) !important;
+    height: 40px !important;
+}
+
+.flatpickr-current-month {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    padding-top: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.flatpickr-current-month .cur-month {
+    font-weight: 700 !important;
+    margin-right: 6px !important;
+}
+
+.flatpickr-current-month .numInputWrapper {
+    width: 60px !important;
+}
+
+.flatpickr-current-month input.cur-year {
+    font-weight: 600 !important;
+}
+
+.flatpickr-prev-month,
+.flatpickr-next-month {
+    padding: 10px !important;
+    height: 32px !important;
+    width: 32px !important;
+    border-radius: 8px !important;
+    top: 4px !important;
+}
+
+.flatpickr-prev-month:hover,
+.flatpickr-next-month:hover {
+    background: var(--slate-100) !important;
+    color: var(--navy-900) !important;
+}
+
+.flatpickr-prev-month svg,
+.flatpickr-next-month svg {
+    width: 12px !important;
+    height: 12px !important;
+    stroke-width: 2px !important;
+}
+
+.flatpickr-weekdays {
+    height: 32px !important;
+}
+
+.flatpickr-weekdaycontainer {
+    padding: 0 4px !important;
+}
+
+.flatpickr-weekday {
+    font-weight: 700 !important;
+    font-size: 10px !important;
+    color: var(--slate-400) !important;
+    background: transparent !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+}
+
+.flatpickr-days {
+    width: 100% !important;
+}
+
+.dayContainer {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 4px !important;
+}
+
+.flatpickr-day {
+    border-radius: 8px !important;
+    height: 38px !important;
+    line-height: 38px !important;
+    color: var(--navy-700) !important;
+    font-weight: 500 !important;
+    font-size: 13px !important;
+    border: 1px solid transparent !important;
+    transition: all 0.15s ease !important;
+    margin: 1px 0 !important;
+    width: 14.28% !important;
+    max-width: none !important;
+}
+
+.flatpickr-day.prevMonthDay,
+.flatpickr-day.nextMonthDay {
+    color: var(--slate-300) !important;
+}
+
+.flatpickr-day:hover {
+    background: var(--slate-100) !important;
+}
+
+.flatpickr-day.today {
+    background: var(--slate-50) !important;
+    border-color: var(--slate-200) !important;
+    color: var(--navy-900) !important;
+    font-weight: 700 !important;
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange,
+.flatpickr-day.selected.inRange,
+.flatpickr-day.startRange.inRange,
+.flatpickr-day.endRange.inRange {
+    background: var(--navy-900) !important;
+    border-color: var(--navy-900) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.4) !important;
+}
+
+/* --- ELITE SCHEDULE GRID --- */
+.elite-grid-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #e2e8f0;
+    /* Grid line color */
+    gap: 1px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+}
+
+.elite-header-row {
+    display: grid;
+    grid-template-columns: 80px repeat(13, minmax(100px, 1fr));
+    /* 80px for days col, rest for times */
+    background: white;
+    /* position: sticky; top: 0; z-index: 20; */
+}
+
+.elite-header-cell {
+    padding: 12px 4px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--slate-500);
+    border-right: 1px solid var(--slate-100);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+}
+
+.elite-header-cell:last-child {
+    border-right: none;
+}
+
+.elite-body-row {
+    display: grid;
+    grid-template-columns: 80px repeat(13, minmax(100px, 1fr));
+    background: white;
+    min-height: 100px;
+}
+
+.elite-day-cell {
+    background: #f8fafc;
+    color: var(--navy-800);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    border-right: 1px solid var(--slate-200);
+    padding: 8px;
+}
+
+.elite-day-cell .day-name {
+    font-size: 16px;
+    letter-spacing: -0.5px;
+}
+
+.elite-day-cell .day-date {
+    font-size: 10px;
+    color: var(--slate-400);
+    font-weight: 500;
+    margin-top: 2px;
+}
+
+.elite-content-cell {
+    grid-column: 2 / -1;
+    position: relative;
+}
+
+/* Vertical Grid Lines in Content */
+.elite-grid-lines {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(13, 1fr);
+    pointer-events: none;
+}
+
+.elite-line {
+    border-right: 1px solid var(--slate-50);
+    height: 100%;
+}
+
+.elite-line:nth-child(even) {
+    background-color: rgba(248, 250, 252, 0.5);
+}
+
+/* Performance Optimization */
+.calendar-card {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 400px;
+    /* Estimate height of a month card */
+}
+
+/* --- MODULE BLOCKS (PILLS) --- */
+.elite-block {
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    border-radius: 6px;
+    background: white;
+    border-left: 4px solid var(--navy-900);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    color: var(--navy-800);
+    z-index: 10;
+    transition: transform 0.2s, box-shadow 0.2s;
+    overflow: hidden;
+}
+
+.elite-block:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    z-index: 50;
+}
+
+.elite-block .time {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--slate-500);
+    margin-bottom: 2px;
+}
+
+.elite-block .title {
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 4px;
+    color: var(--navy-900);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.elite-block .details {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    color: var(--slate-500);
+}
+
+.elite-block .details span {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+/* Timeline Indicator for "NOW" */
+.now-indicator-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #3b82f6;
+    z-index: 40;
+    pointer-events: none;
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+}
+
+.now-indicator-head {
+    position: absolute;
+    top: -6px;
+    left: -20px;
+    /* Centered on line */
+    background: #3b82f6;
+    color: white;
+    font-size: 9px;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    transform: translateX(1px);
+    /* micro fix */
+}
+
+/* --- SIDEBAR INSIGHTS --- */
+.insight-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+    margin-bottom: 16px;
+    border: 1px solid var(--slate-100);
+}
+
+.insight-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--navy-900);
+    margin-bottom: 12px;
+}
+
+.insight-stat-circle {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 8px solid var(--slate-100);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    position: relative;
+}
+
+/* SVG circle would be better for progress, but simple css border for now */
+
+.alert-item {
+    padding: 10px;
+    border-radius: 8px;
+    background: #fffbeb;
+    border: 1px solid #fef3c7;
+    margin-bottom: 8px;
+    display: flex;
+    gap: 10px;
+}
+
+.alert-icon {
+    color: #d97706;
+}
+
+.alert-text h4 {
+    font-size: 12px;
+    font-weight: 700;
+    color: #92400e;
+    margin-bottom: 2px;
+}
+
+.alert-text p {
+    font-size: 10px;
+    color: #b45309;
+    line-height: 1.3;
+}
+
+/* --- DIALOGS --- */
+.dialog {
+    animation: dialogSafe 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dialogSafe {
+    0% {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Removed Lesson Style */
+/* Removed Lesson Style */
+.elite-block.is-removed {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    opacity: 0.6;
+    filter: grayscale(100%);
+    /* Make everything gray */
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.05);
+    /* Inner shadow */
+}
+
+.elite-block.is-removed .title {
+    text-decoration: line-through;
+    color: #64748b;
+}
+
+.elite-block.is-removed .time,
+.elite-block.is-removed .details {
+    opacity: 0.7;
+}
+
+/* Added Lesson Style */
+.elite-block.is-new {
+    /* Hatched background effect */
+    background-image: repeating-linear-gradient(45deg,
+            rgba(34, 197, 94, 0.05),
+            rgba(34, 197, 94, 0.05) 10px,
+            rgba(34, 197, 94, 0.15) 10px,
+            rgba(34, 197, 94, 0.15) 20px) !important;
+    box-shadow: none !important;
+    /* Remove inner ring, simplify */
+}
+
+.elite-block.is-new::after {
+    content: "PRIDĖTA";
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 8px;
+    font-weight: 900;
+    color: #15803d;
+    background: #dcfce7;
+    padding: 1px 3px;
+    border-radius: 4px;
+}
+
+/* --- YEARLY GRID VIEW --- */
+.y-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    font-size: 11px;
+    color: var(--navy-800);
+    background: white;
+}
+
+.y-table th,
+.y-table td {
+    border-right: 1px solid var(--slate-200);
+    border-bottom: 1px solid var(--slate-200);
+    padding: 4px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* Sticky Headers (Top) */
+.y-header-top {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: var(--slate-100);
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--slate-500);
+    height: 30px;
+}
+
+/* Sticky Columns (Left) - Consolidated Rules */
+.y-col-fixed {
+    position: sticky;
+    left: 0;
+    z-index: 20;
+    background: white;
+    border-right: 2px solid var(--slate-200);
+    text-align: left !important;
+    padding-left: 12px !important;
+    font-weight: 600;
+    white-space: normal;
+    overflow: visible;
+    line-height: 1.3;
+    vertical-align: middle;
+    height: 100%;
+    /* Ensure full height */
+}
+
+/* 1. Module Name Column */
+.y-col-fixed:nth-child(1) {
+    left: 0;
+    width: 220px;
+    min-width: 220px;
+    max-width: 220px;
+    z-index: 25;
+    /* Higher z-index to stay on top if needed */
+}
+
+/* 2. Teacher Column */
+.y-col-fixed:nth-child(2) {
+    left: 220px;
+    width: 100px;
+    min-width: 100px;
+    max-width: 100px;
+    font-weight: 400;
+    color: var(--slate-500);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    z-index: 25;
+}
+
+/* 3. Target Column */
+.y-col-fixed:nth-child(3) {
+    left: 320px;
+    width: 50px;
+    min-width: 50px;
+    max-width: 50px;
+    background: var(--slate-50);
+    text-align: center !important;
+    padding-left: 4px !important;
+    /* Reset padding for center align */
+    z-index: 25;
+}
+
+/* 4. Sem1 Column */
+.y-col-fixed:nth-child(4) {
+    left: 370px;
+    width: 50px;
+    min-width: 50px;
+    max-width: 50px;
+    background: #fffbeb;
+    text-align: center !important;
+    padding-left: 4px !important;
+    z-index: 25;
+}
+
+/* 5. Sem2 Column */
+.y-col-fixed:nth-child(5) {
+    left: 420px;
+    width: 50px;
+    min-width: 50px;
+    max-width: 50px;
+    background: #fef2f2;
+    /* Light red for sem2 */
+    text-align: center !important;
+    padding-left: 4px !important;
+    border-right: 2px solid var(--slate-300);
+    /* strong separator after fixed block */
+    z-index: 25;
+}
+
+/* Header Specific Overrides for proper stacking context */
+th.y-col-fixed {
+    z-index: 45 !important;
+    /* Ensure headers are above body cells */
+    background: var(--slate-50);
+    border-bottom: 1px solid var(--slate-300);
+}
+
+/* Table Row Styling */
+.y-table tr {
+    transition: background-color 0.1s;
+}
+
+/* Zebra Striping */
+.y-table tr:nth-child(even) td:not(.y-col-fixed) {
+    background-color: #fafafa;
+}
+
+/* Row Hover - Affects all cells including sticky ones */
+.y-table tr:hover td {
+    background-color: #f1f5f9 !important;
+    /* Override zebra and default bg */
+}
+
+/* Ensure sticky columns get the hover color too, but keep their specific styling if needed */
+.y-table tr:hover td.y-col-fixed {
+    background-color: #f1f5f9 !important;
+}
+
+/* Cell Borders - Lighter */
+.y-table th,
+.y-table td {
+    border-right: 1px solid var(--slate-100);
+    border-bottom: 1px solid var(--slate-100);
+}
+
+/* Month Headers bg */
+.y-header-month {
+    background: white;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Week Headers bg */
+.y-header-week {
+    background: #f8fafc;
+}
+
+.y-col-fixed.y-sem2 {
+    left: 400px;
+    /* After sem1 */
+    width: 50px;
+    min-width: 50px;
+    background: #f0fdf4;
+    /* light green for sem2 */
+    text-align: center !important;
+    border-right: 2px solid var(--slate-300);
+    z-index: 20;
+}
+
+
+
+/* Intersections of Sticky */
+.y-header-top.y-col-fixed,
+.y-header-month.y-col-fixed,
+.y-header-week.y-col-fixed {
+    z-index: 40 !important;
+    background: var(--slate-100);
+}
+
+/* Data Cells */
+.y-cell-val {
+    font-weight: 600;
+    color: var(--navy-900);
+}
+
+.y-cell-empty {
+    background: repeating-linear-gradient(45deg, #fff, #fff 5px, #f8fafc 5px, #f8fafc 10px);
+}
+
+.y-cell-warn {
+    background: #fef2f2;
+
+    color: #dc2626;
+}
+
+/* --- VACATION GANTT CHART --- */
+.gantt-scroll-container {
+    display: block;
+    /* Ensure block formatting context */
+    overflow-x: auto;
+    position: relative;
+    border: 1px solid var(--slate-200);
+    border-radius: 8px;
+    background: white;
+    max-height: 60vh;
+    scrollbar-width: auto;
+    scrollbar-color: var(--slate-500) var(--slate-200);
+    /* High contrast */
+    width: 100%;
+    max-width: 100%;
+    /* Strict max-width */
+}
+
+/* Ensure Webkit browsers show scrollbar */
+.gantt-scroll-container::-webkit-scrollbar {
+    height: 12px;
+}
+
+.gantt-scroll-container::-webkit-scrollbar-track {
+    background: var(--slate-100);
+}
+
+.gantt-scroll-container::-webkit-scrollbar-thumb {
+    background-color: var(--slate-400);
+    border-radius: 6px;
+    border: 3px solid var(--slate-100);
+}
+
+.gantt-header-wrapper {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: white;
+    border-bottom: 1px solid var(--slate-200);
+}
+
+.gantt-header-months {
+    display: flex;
+    height: 24px;
+    background: var(--slate-50);
+    border-bottom: 1px solid var(--slate-200);
+    /* margin-left removed, using sticky col */
+    min-width: 100%;
+    /* Ensure full width */
+}
+
+/* Sticky Header Column (Month/Day levels) */
+.gantt-header-sticky {
+    position: sticky;
+    left: 0;
+    width: 100px !important;
+    /* Force width */
+    min-width: 100px;
+    /* Prevent shrink */
+    max-width: 100px;
+    flex-shrink: 0;
+    background: var(--slate-100);
+    z-index: 40;
+    /* High z-index to stay on top */
+    border-right: 2px solid var(--slate-200);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--slate-500);
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+    /* Visual separation */
+}
+
+.gantt-month-cell {
+    border-right: 1px solid var(--slate-200);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--slate-500);
+    flex-shrink: 0;
+    overflow: hidden;
+    background: var(--slate-50);
+}
+
+.gantt-header-days {
+    display: flex;
+    height: 20px;
+    background: white;
+    min-width: 100%;
+}
+
+.gantt-day-header-cell {
+    flex-shrink: 0;
+    border-right: 1px solid var(--slate-100);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    color: var(--slate-400);
+}
+
+.gantt-body-row {
+    display: flex;
+    height: 36px;
+    border-bottom: 1px solid var(--slate-100);
+    position: relative;
+    background: white;
+    min-width: 100%;
+}
+
+.gantt-body-row:hover {
+    background-color: #f8fafc;
+}
+
+.gantt-group-col {
+    position: sticky;
+    left: 0;
+    width: 100px !important;
+    min-width: 100px;
+    max-width: 100px;
+    flex-shrink: 0;
+    background: white;
+    z-index: 20;
+    border-right: 2px solid var(--slate-200);
+    display: flex;
+    align-items: center;
+    padding-left: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--navy-900);
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+}
+
+/* Removed absolute corner header as we use sticky cols now */
+
+
+.gantt-day-grid {
+    flex-grow: 1;
+    position: relative;
+    /* Grid lines handled via JS or specific classes */
+}
+
+/* Vertical Grid Lines */
+.gantt-grid-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-right: 1px solid var(--slate-50);
+    pointer-events: none;
+}
+
+.gantt-grid-line.month-end {
+    border-right: 1px solid var(--slate-200);
+}
+
+.gantt-bar {
+    position: absolute;
+    top: 7px;
+    bottom: 7px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+    cursor: help;
+    transition: transform 0.1s;
+}
+
+.gantt-bar:hover {
+    transform: scaleY(1.1);
+    z-index: 15;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.gantt-bar-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.gantt-bar.vac {
+    background-color: #60a5fa;
+    border: 1px solid #3b82f6;
+}
+
+/* Blue */
+.gantt-bar.sick {
+    background-color: #f87171;
+    border: 1px solid #ef4444;
+}
+
+/* Red */
+.gantt-bar.work {
+    background-color: #4ade80;
+    border: 1px solid #22c55e;
+}
+
+/* Green */
+
+.gantt-month-divider {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-right: 1px solid var(--slate-200);
+    pointer-events: none;
+}
+
+
+.y-cell-ok {
+    background: #f0fdf4;
+    color: #16a34a;
+}

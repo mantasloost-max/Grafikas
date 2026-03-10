@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="lt">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Akademinis Kalendorius (Fixed)</title>
+
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/lt.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        navy: {
+                            900: '#0f172a',
+                            800: '#1e293b',
+                            700: '#334155'
+                        },
+                        gold: { 500: '#f59e0b' },
+                        slate: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        }
+                    },
+                    boxShadow: {
+                        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                        'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="css/style.css?v=8">
+    <script src="js/app.js?v=8" defer></script>
+</head>
+
+<body class="min-h-screen flex flex-col overflow-x-hidden bg-slate-50 text-navy-800">
+
+    <header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-200 shadow-sm">
+        <div class="max-w-[1920px] mx-auto px-6 h-14 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-navy-900 text-white rounded flex items-center justify-center shadow-md">
+                    <span class="material-symbols-outlined text-lg">calendar_month</span>
+                </div>
+                <div>
+                    <h1 class="font-bold text-navy-900 leading-none text-base">Akademinis Kalendorius</h1>
+                    <div id="todayStr" class="text-[10px] text-slate-500 uppercase tracking-wide font-medium">
+                        Kraunama...</div>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <button id="btnWeekly"
+                    class="px-3 py-1.5 text-xs font-bold bg-white text-navy-900 border border-slate-200 rounded hover:bg-slate-50 flex items-center gap-1 shadow-sm transition-transform active:scale-95">
+                    <span class="material-symbols-outlined text-sm">grid_view</span> Tvarkaraštis
+                </button>
+                <button id="btnYearly"
+                    class="px-3 py-1.5 text-xs font-bold bg-white text-navy-900 border border-slate-200 rounded hover:bg-slate-50 flex items-center gap-1 shadow-sm transition-transform active:scale-95">
+                    <span class="material-symbols-outlined text-sm">table_chart</span> Metinis
+                </button>
+                <div class="w-px h-6 bg-slate-200 mx-1"></div>
+                <button id="btnExport"
+                    class="px-3 py-1.5 text-xs font-medium bg-white border border-slate-200 rounded hover:bg-slate-50 text-slate-600 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm">download</span> Eksportuoti
+                </button>
+                <label
+                    class="px-3 py-1.5 text-xs font-medium bg-white border border-slate-200 rounded hover:bg-slate-50 text-slate-600 flex items-center gap-1 cursor-pointer">
+                    <span class="material-symbols-outlined text-sm">upload</span> Importuoti
+                    <input type="file" id="fileImport" class="hidden" accept=".json">
+                </label>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-[1920px] mx-auto w-full p-6 lg:p-8 flex flex-col xl:flex-row gap-8">
+        <div class="flex flex-col xl:flex-row gap-8 flex-1 relative min-w-0 w-full">
+            <button id="sidebarToggle"
+                class="absolute -right-3 top-6 z-10 w-6 h-12 bg-white border border-slate-200 rounded-l-lg shadow-md flex items-center justify-center text-slate-400 hover:text-navy-900 transition-colors xl:hidden hidden">
+                <span class="material-symbols-outlined text-lg">chevron_right</span>
+            </button>
+
+            <div class="flex-1 flex flex-col gap-6 min-w-0" id="mainContent">
+
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-card flex flex-wrap gap-4 items-end">
+                    <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Mokslo
+                            Metai</label><select id="acadYearSelect"
+                            class="block w-32 mt-1 text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 cursor-pointer"></select>
+                    </div>
+                    <div><label
+                            class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Grupė</label><select
+                            id="groupFilter"
+                            class="block w-28 mt-1 text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 cursor-pointer">
+                            <option value="">Visos</option>
+                        </select></div>
+                    <div><label
+                            class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Modulis</label><select
+                            id="moduleFilter"
+                            class="block w-48 mt-1 text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 cursor-pointer">
+                            <option value="">Visi</option>
+                        </select></div>
+                    <div><label
+                            class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Dėstytojas</label><select
+                            id="teacherFilter"
+                            class="block w-32 mt-1 text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 cursor-pointer">
+                            <option value="">Visi</option>
+                        </select></div>
+                    <div class="border-l border-slate-200 pl-4 ml-2 flex gap-4">
+                        <div>
+                            <label class="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">2 Semestro
+                                Pradžia</label>
+                            <input id="sem2Start" type="text"
+                                class="block w-28 mt-1 text-sm border-indigo-200 rounded-lg focus:border-indigo-500 focus:ring-indigo-500 cursor-pointer bg-indigo-50/30"
+                                placeholder="Pasirinkti...">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-red-500 uppercase tracking-wider">Mokslo Metų
+                                Pabaiga</label>
+                            <input id="semEnd" type="text"
+                                class="block w-28 mt-1 text-sm border-red-200 rounded-lg focus:border-red-500 focus:ring-red-500 cursor-pointer bg-red-50/30"
+                                placeholder="Pasirinkti...">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="yearWall" class="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-6"></div>
+
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-card min-w-0">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-semibold text-navy-900 text-sm flex items-center gap-2"><span
+                                class="material-symbols-outlined text-gold-500 text-lg">flight_takeoff</span> Atostogos
+                            /
+                            Liga</h3>
+                        <div class="flex gap-2">
+                            <button id="btnSickThisWeek"
+                                class="bg-red-50 text-red-700 hover:bg-red-100 text-[11px] font-bold px-3 py-1.5 rounded border border-red-200 transition-colors flex items-center gap-1"><span
+                                    class="material-symbols-outlined text-sm">medication</span> Sergu šią sav.</button>
+                            <button id="btnAutoImage"
+                                class="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-[11px] font-bold px-3 py-1.5 rounded border border-indigo-200 transition-colors">+
+                                2025-26 Grafikas</button>
+                            <button id="btnAutoHolidays"
+                                class="bg-slate-50 text-slate-600 hover:bg-slate-100 text-[11px] font-bold px-3 py-1.5 rounded border border-slate-200 transition-colors">+
+                                Importuoti LT Šventes</button>
+                        </div>
+                    </div>
+                    <div
+                        class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-5 min-w-0 w-full max-w-full">
+                        <!-- Input Section -->
+                        <div class="grid grid-cols-12 gap-4">
+                            <!-- Left: Type & Dates -->
+                            <div class="col-span-12 lg:col-span-4 flex flex-col gap-3">
+                                <div>
+                                    <label
+                                        class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Tipas</label>
+                                    <select id="vType"
+                                        class="w-full text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 h-10 bg-slate-50">
+                                        <option value="vac">🏖️ Atostogos (Visiems/Grupėms)</option>
+                                        <option value="sick">💊 Liga (Tik Grupėms)</option>
+                                        <option value="work">💼 Darbo diena (Išimtis)</option>
+                                    </select>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label
+                                            class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Nuo</label>
+                                        <div class="relative">
+                                            <input id="vFrom" type="text"
+                                                class="w-full text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 h-10 pl-9 bg-slate-50"
+                                                placeholder="Data...">
+                                            <span
+                                                class="material-symbols-outlined absolute left-2.5 top-2.5 text-slate-400">calendar_today</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Iki</label>
+                                        <div class="relative">
+                                            <input id="vTo" type="text"
+                                                class="w-full text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 h-10 pl-9 bg-slate-50"
+                                                placeholder="Data...">
+                                            <span
+                                                class="material-symbols-outlined absolute left-2.5 top-2.5 text-slate-400">event</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button id="addVac"
+                                    class="mt-auto w-full bg-navy-900 text-white text-sm font-bold uppercase tracking-wide rounded-lg h-10 hover:bg-navy-800 transition-colors shadow-md flex items-center justify-center gap-2">
+                                    <span class="material-symbols-outlined">save</span> IŠSAUGOTI / PRIDĖTI
+                                </button>
+                            </div>
+
+                            <!-- Right: Group Selection (Checkboxes) -->
+                            <div
+                                class="col-span-12 lg:col-span-8 border border-slate-200 rounded-lg p-3 bg-slate-50/50 flex flex-col">
+                                <div class="flex justify-between items-center mb-2 border-b border-slate-200 pb-2">
+                                    <label
+                                        class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Pasirinkite
+                                        Grupes (Palikus tuščią = VISOS)</label>
+                                    <div class="flex gap-2">
+                                        <button id="btnSelAll"
+                                            class="text-[10px] text-blue-600 hover:text-blue-800 font-bold uppercase">Visos</button>
+                                        <span class="text-slate-300">|</span>
+                                        <button id="btnSelNone"
+                                            class="text-[10px] text-slate-500 hover:text-navy-900 font-bold uppercase">Niekas</button>
+                                    </div>
+                                </div>
+                                <div id="groupCheckboxes"
+                                    class="flex-1 overflow-y-auto max-h-[140px] grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 content-start">
+                                    <!-- Checkboxes generated by JS -->
+                                    <div class="text-xs text-slate-400 italic p-2">Kraunamos grupės...</div>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <!-- GANTT CHART (Yearly) -->
+                        <div id="vacationGanttContainer"
+                            class="hidden border border-slate-200 rounded-lg overflow-hidden bg-white mb-4 min-w-0 w-full max-w-full">
+                            <div class="p-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                                <h4 class="font-bold text-navy-900 text-xs uppercase tracking-wider">Metinė Apžvalga
+                                </h4>
+                                <div class="flex gap-2 text-[10px]">
+                                    <span class="flex items-center gap-1"><span
+                                            class="w-2 h-2 rounded-full bg-blue-400"></span> Atostogos</span>
+                                    <span class="flex items-center gap-1"><span
+                                            class="w-2 h-2 rounded-full bg-red-400"></span> Liga</span>
+                                    <span class="flex items-center gap-1"><span
+                                            class="w-2 h-2 rounded-full bg-green-400"></span> Darbo d.</span>
+                                </div>
+                            </div>
+                            <!-- Gantt Content Injected Here -->
+                            <div id="ganttChartContent" class="gantt-scroll-container overflow-x-auto custom-scrollbar">
+                            </div>
+                        </div>
+
+                        <!-- Data Table -->
+                        <div class="border border-slate-200 rounded-lg overflow-x-auto overflow-y-hidden w-full">
+                            <table class="w-full text-left border-collapse">
+                                <thead
+                                    class="bg-slate-50 text-[10px] uppercase text-slate-500 font-bold tracking-wider border-b border-slate-200">
+                                    <tr>
+                                        <th class="px-4 py-3 w-32">Laikotarpis</th>
+                                        <th class="px-4 py-3 w-24">Tipas</th>
+                                        <th class="px-4 py-3">Grupės / Aprašymas</th>
+                                        <th class="px-4 py-3 w-10 text-center">#</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vacTableBody" class="text-sm divide-y divide-slate-100 bg-white">
+                                    <!-- Rows generated by JS -->
+                                    <tr>
+                                        <td colspan="4" class="p-6 text-center text-slate-400 italic">Nėra duomenų.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div> <!-- End mainContent -->
+
+            <!-- Sidebar Wrapper for sliding -->
+            <div class="relative shrink-0 transition-all duration-500 ease-in-out" id="sidebarWrapper">
+                <!-- Toggle Button (Custom Positioned) -->
+                <button id="sidebarToggleBtn"
+                    class="absolute -left-3 top-8 z-20 w-6 h-12 bg-white border border-slate-200 rounded-full shadow-md flex items-center justify-center text-slate-400 hover:text-navy-900 hover:scale-110 transition-all cursor-pointer hidden xl:flex">
+                    <span class="material-symbols-outlined text-lg">chevron_right</span>
+                </button>
+
+                <aside id="rightSidebar"
+                    class="w-full xl:w-96 transition-all duration-500 ease-in-out transform origin-right">
+                    <div class="sticky-col space-y-6 min-w-[24rem]">
+                        <div
+                            class="bg-white rounded-2xl border border-slate-200 shadow-lg p-6 relative overflow-hidden">
+                            <div
+                                class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-navy-900 via-indigo-500 to-gold-500">
+                            </div>
+                            <h2 class="font-bold text-navy-900 mb-4 flex items-center gap-2"><span
+                                    class="material-symbols-outlined text-slate-400">add_circle</span> Naujas Modulis
+                            </h2>
+                            <div class="space-y-4">
+                                <div><label
+                                        class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pavadinimas</label><input
+                                        id="mName"
+                                        class="w-full text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 shadow-sm"
+                                        placeholder="pvz. IN25V"></div>
+
+                                <div><label
+                                        class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Dėstytojas</label><input
+                                        id="mTeacher" list="teacherSuggestions"
+                                        class="w-full text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 shadow-sm"
+                                        placeholder="Vardas Pavardė"><datalist id="teacherSuggestions"></datalist></div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div><label
+                                            class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Grupė</label><input
+                                            id="mGroup" list="groupSuggestions"
+                                            class="w-full text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 shadow-sm"
+                                            placeholder="PI24"><datalist id="groupSuggestions"></datalist></div>
+                                    <div><label
+                                            class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Spalva</label>
+                                        <div class="flex items-center gap-2"><input id="mColor" type="color"
+                                                value="#3b82f6" class="h-9 w-full p-0 border-0 rounded cursor-pointer">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div><label
+                                            class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tikslas
+                                            (val.)</label><input id="mTarget" type="number" min="1"
+                                            class="w-full text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 shadow-sm"
+                                            placeholder="48"></div>
+                                    <div><label
+                                            class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pradžia</label><input
+                                            id="mStart" type="text"
+                                            class="w-full text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 shadow-sm"
+                                            placeholder="YYYY-MM-DD"></div>
+                                </div>
+                                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                    <label
+                                        class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2 text-center">Savaitės
+                                        planas</label>
+                                    <div id="scheduleInputs" class="space-y-2"></div>
+                                </div>
+                                <button id="addMod"
+                                    class="w-full bg-navy-900 hover:bg-navy-800 text-white font-semibold py-2.5 rounded-lg shadow-md transition-all active:scale-[0.98]">Pridėti
+                                    Modulį</button>
+                            </div>
+                        </div>
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Aktyvūs moduliai
+                        </h3>
+                        <div id="miniList" class="space-y-4 pb-10"></div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </main>
+
+    <template id="dayDialogTpl">
+        <div
+            class="fixed inset-0 z-[60] flex items-center justify-center bg-navy-900/50 backdrop-blur-sm overlay p-4 animate-in fade-in duration-200">
+            <div
+                class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden dialog ring-1 ring-slate-200 flex flex-col max-h-[90vh]">
+                <div
+                    class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white flex-shrink-0">
+                    <div>
+                        <h3 class="font-bold text-navy-900 text-lg">Dienos Suvestinė</h3>
+                        <div class="date text-sm font-medium text-slate-500"></div>
+                    </div>
+                    <button
+                        class="close w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-navy-900 transition-colors"><span
+                            class="material-symbols-outlined text-xl">close</span></button>
+                </div>
+
+                <div class="p-4 overflow-y-auto flex-1 bg-slate-50/50">
+                    <div class="list-container space-y-3"></div>
+                </div>
+
+                <div class="p-4 bg-white border-t border-slate-100 flex-shrink-0">
+                    <div class="bg-navy-900 text-white rounded-xl p-4 flex justify-between items-center shadow-lg">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Viso Šiandien</div>
+                        <div class="flex items-baseline gap-1">
+                            <span class="sumDay text-2xl font-bold text-white">0</span>
+                            <span class="text-slate-400 text-sm font-medium">val.</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between px-2 mt-3 text-xs text-slate-500">
+                        <div>Pravesta: <span class="sumCum font-bold text-navy-900">0</span></div>
+                        <div>Liko: <span class="sumLeft font-bold text-navy-900">0</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="weeklyDialogTpl">
+        <div
+            class="fixed inset-0 z-[60] flex items-center justify-center bg-navy-900/50 backdrop-blur-sm overlay p-4 animate-in fade-in duration-200">
+            <div
+                class="bg-slate-50 rounded-xl shadow-2xl w-full max-w-[98vw] h-[95vh] overflow-hidden dialog ring-1 ring-slate-200 flex flex-col">
+                <!-- Header -->
+                <div
+                    class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-white flex-shrink-0 shadow-sm z-20">
+                    <div class="flex items-center gap-6">
+                        <h3 class="font-bold text-navy-900 text-lg flex items-center gap-2">
+                            <span class="material-symbols-outlined text-gold-500">grid_view</span>
+                            Savaitės Tvarkaraštis
+                        </h3>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2">
+                            <button id="prevWeek" aria-label="Ankstesnė savaitė"
+                                class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 border border-slate-200 text-slate-500 hover:bg-white hover:text-navy-900 transition-all shadow-sm"><span
+                                    class="material-symbols-outlined text-sm">chevron_left</span></button>
+                            <input id="weekPicker" type="text"
+                                class="w-64 text-xs font-bold text-center border-slate-200 rounded-lg focus:ring-navy-900 shadow-sm"
+                                placeholder="Pasirinkti savaitę...">
+                            <button id="nextWeek" aria-label="Kita savaitė"
+                                class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 border border-slate-200 text-slate-500 hover:bg-white hover:text-navy-900 transition-all shadow-sm"><span
+                                    class="material-symbols-outlined text-sm">chevron_right</span></button>
+                        </div>
+                        <button
+                            class="close w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"><span
+                                class="material-symbols-outlined">close</span></button>
+                    </div>
+                </div>
+
+                <!-- Main Content (Flex Row) -->
+                <div class="flex-1 overflow-hidden flex flex-row relative">
+
+                    <!-- Left: Timeline Grid -->
+                    <div class="flex-1 overflow-auto p-4 md:p-6 relative" id="timelineWrapper">
+                        <!-- Timelines will be injected here -->
+                        <div id="gridContainer" class="elite-grid-container shadow-sm"></div>
+                    </div>
+
+                    <!-- Right: Smart Insights Sidebar -->
+                    <div
+                        class="w-80 bg-slate-50 border-l border-slate-200 p-6 overflow-y-auto flex-shrink-0 z-10 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)]">
+                        <h4 class="font-bold text-navy-900 text-lg mb-6 flex items-center gap-2">Savaitės Įžvalgos</h4>
+
+                        <div class="insight-card">
+                            <div class="insight-title">Plano Vykdymas</div>
+                            <div class="insight-stat-circle flex items-center justify-center">
+                                <span class="text-2xl font-bold text-navy-900" id="statAttendance">0%</span>
+                                <span class="text-[9px] text-slate-400 uppercase font-bold mt-1">Įvykdyta</span>
+                            </div>
+                            <div class="mt-4 text-center text-xs text-slate-500">Bendras Vidurkis</div>
+                        </div>
+
+                        <div class="insight-card bg-red-50 border-red-100">
+                            <div class="insight-title text-red-800 flex items-center gap-2"><span
+                                    class="material-symbols-outlined text-red-500 text-base">warning</span> Svarbūs
+                                Pranešimai</div>
+                            <div id="urgentAlertsList" class="space-y-2">
+                                <!-- Alerts injected via JS -->
+                            </div>
+                        </div>
+
+                        <div class="insight-card bg-blue-50 border-blue-100">
+                            <div class="insight-title text-blue-800 flex items-center gap-2"><span
+                                    class="material-symbols-outlined text-blue-500 text-base">info</span> Savaitės
+                                Ataskaita</div>
+                            <div id="weekReportContent" class="text-xs text-blue-900 space-y-1"></div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="overrideDialogTpl">
+        <div class="fixed inset-0 z-[60] flex items-center justify-center bg-navy-900/50 backdrop-blur-sm overlay p-4">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden dialog p-6">
+                <h3 class="font-bold text-navy-900 mb-2 text-lg">Keisti grafiką</h3>
+                <p class="text-xs text-slate-500 mb-5 leading-relaxed">Nuo pasirinktos datos (imtinai) galios naujas
+                    savaitinis planas. (Laukeliai užpildyti dabartiniu planu)</p>
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Nuo
+                    datos</label>
+                <input id="ovFrom" type="text"
+                    class="w-full text-sm border-slate-200 rounded-lg mb-5 focus:ring-navy-900"
+                    placeholder="YYYY-MM-DD">
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Naujas planas
+                    (Pamokų sk. ir Pradžia)</label>
+                <div class="grid grid-cols-1 gap-2 mb-6" id="ovInputsContainer"></div>
+                <div class="flex justify-end gap-3 pt-2 border-t border-slate-100">
+                    <button
+                        class="cancel px-4 py-2 text-xs font-semibold text-slate-500 hover:text-navy-900 hover:bg-slate-50 rounded transition-colors">Atšaukti</button>
+                    <button
+                        class="save px-4 py-2 text-xs font-semibold bg-navy-900 text-white rounded hover:bg-navy-800 shadow transition-colors">Išsaugoti</button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="editModuleDialogTpl">
+        <div class="fixed inset-0 z-[60] flex items-center justify-center bg-navy-900/50 backdrop-blur-sm overlay p-4">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden dialog p-6">
+                <h3 class="font-bold text-navy-900 mb-4 text-lg">Redaguoti Modulį</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label
+                            class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pavadinimas</label>
+                        <input id="emName"
+                            class="w-full text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 shadow-sm">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Dėstytojas</label>
+                        <input id="emTeacher" list="teacherSuggestions"
+                            class="w-full text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 shadow-sm"
+                            placeholder="Vardas Pavardė">
+                        <datalist id="teacherSuggestions"></datalist>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Grupė</label>
+                            <input id="emGroup" list="groupSuggestions"
+                                class="w-full text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 shadow-sm">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Spalva</label>
+                            <div class="flex items-center gap-2"><input id="emColor" type="color"
+                                    class="h-9 w-full p-0 border-0 rounded cursor-pointer"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tikslas
+                            (val.)</label>
+                        <input id="emTarget" type="number" min="1"
+                            class="w-full text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 shadow-sm">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pradžia</label>
+                        <input id="emStart" type="text"
+                            class="w-full text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 shadow-sm"
+                            placeholder="YYYY-MM-DD">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-5 mt-2 border-t border-slate-100">
+                    <button
+                        class="cancel px-4 py-2 text-xs font-semibold text-slate-500 hover:text-navy-900 hover:bg-slate-50 rounded transition-colors">Atšaukti</button>
+                    <button
+                        class="save px-4 py-2 text-xs font-semibold bg-navy-900 text-white rounded hover:bg-navy-800 shadow transition-colors">Išsaugoti</button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="yearlyGridDialogTpl">
+        <div
+            class="fixed inset-0 z-[60] flex items-center justify-center bg-navy-900/50 backdrop-blur-sm overlay p-4 animate-in fade-in duration-200">
+            <div
+                class="bg-white rounded-xl shadow-2xl w-full max-w-[98vw] h-[95vh] overflow-hidden dialog ring-1 ring-slate-200 flex flex-col">
+                <div
+                    class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 flex-shrink-0">
+                    <div class="flex items-center gap-4">
+                        <h3 class="font-bold text-navy-900 flex items-center gap-2"><span
+                                class="material-symbols-outlined">table_chart</span> Metinis Planas</h3>
+                    </div>
+                    <button class="close text-slate-400 hover:text-navy-900 transition-colors"><span
+                            class="material-symbols-outlined">close</span></button>
+                </div>
+                <div class="flex-1 flex flex-col min-h-0 relative" id="ySplitArea">
+                    <div class="overflow-auto bg-slate-50 p-0 relative border-b border-slate-200 flex-none"
+                        id="yGridContainer" style="height: 50%;">
+                        <!-- Grid generated by JS -->
+                    </div>
+
+                    <!-- Resizer Handle -->
+                    <div id="ySplitter"
+                        class="h-2 bg-slate-200 hover:bg-blue-400 cursor-row-resize flex items-center justify-center shrink-0 z-[100] transition-colors">
+                        <div class="w-8 h-1 bg-slate-400 rounded-full"></div>
+                    </div>
+
+                    <div class="bg-slate-100 p-4 border-t border-slate-200 flex-1 min-h-0 overflow-auto"
+                        id="yReportCalendarContainer">
+                        <div id="yReportCalendarGrid"
+                            class="grid grid-cols-6 gap-2 origin-top-left transform scale-[0.65] w-[155%]">
+                            <!-- Report Calendar generated by JS -->
+                            <div class="col-span-6 text-center text-slate-400 mt-10">Kraunamas kalendorius...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+</body>
+
+</html>

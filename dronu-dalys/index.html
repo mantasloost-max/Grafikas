@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="lt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interaktyvus Dronų Dalių Gidas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/data.js" defer></script>
+    <script src="js/app.js" defer></script>
+</head>
+
+<body>
+    <div class="app-background">
+        <div class="glow glow-1"></div>
+        <div class="glow glow-2"></div>
+        <div class="noise-overlay"></div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L2 12l10 10 10-10L12 2z"></path>
+                            <path d="M12 12l10-10"></path>
+                            <path d="M12 12v10"></path>
+                            <path d="M12 12L2 2z"></path>
+                        </svg>
+                    </div>
+                    <span>AeroGuide</span>
+                </div>
+                <p class="subtitle">Interaktyvi Anatomija</p>
+            </div>
+
+            <nav class="nav-menu nice-scrollbar" id="nav-list">
+                <!-- Navigation items injected here -->
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <div class="content-layout">
+                <div class="text-panel">
+                    <div class="text-panel-inner nice-scrollbar">
+                        <header class="top-bar">
+                            <div class="badge">
+                                <span class="badge-dot"></span>
+                                KOMPONENTAS
+                            </div>
+                            <h1 id="current-title" class="glitch-title">Drono dalis</h1>
+                        </header>
+                        <div class="text-content" id="main-description">
+                            <!-- Text content injected here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="visual-panel">
+                    <div class="visual-frame">
+                        <div class="image-loader" id="image-loader">
+                            <div class="tech-spinner"></div>
+                        </div>
+                        <img id="main-image" src="" alt="Drono dalies vizualizacija" style="display: none;">
+
+                        <!-- HUD Elements -->
+                        <div class="hud-corner top-left"></div>
+                        <div class="hud-corner top-right"></div>
+                        <div class="hud-corner bottom-left"></div>
+                        <div class="hud-corner bottom-right"></div>
+
+                        <div class="hud-line vertical left"></div>
+                        <div class="hud-line vertical right"></div>
+                        <div class="hud-line horizontal top"></div>
+                        <div class="hud-line horizontal bottom"></div>
+
+                        <div class="data-overlay">
+                            <div class="data-block">
+                                <span class="data-label">STATUS</span>
+                                <span class="data-value tech-green">ONLINE</span>
+                            </div>
+                            <div class="data-block right">
+                                <span class="data-label">SCAN</span>
+                                <span class="data-value">COMPLETE</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>

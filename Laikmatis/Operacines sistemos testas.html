@@ -1,0 +1,1302 @@
+<!doctype html>
+<html lang="lt">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Boot/Command Timer – Testavimo laikmatis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --secondary: #f1f5f9;
+      --secondary-hover: #e2e8f0;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --danger-bg: #fef2f2;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --radius: 16px;
+      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      margin: 0;
+      padding: 32px 24px;
+      line-height: 1.5;
+      max-width: 1400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-top: 0;
+      margin-bottom: 8px;
+      color: var(--text-main);
+      letter-spacing: -0.5px;
+    }
+
+    h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-top: 0;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-main);
+    }
+
+    .row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    label {
+      font-weight: 500;
+      font-size: 14px;
+      color: var(--text-main);
+    }
+
+    button,
+    select,
+    input,
+    textarea {
+      font-family: inherit;
+      font-size: 14px;
+      padding: 10px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background-color: #fff;
+      color: var(--text-main);
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+
+    button {
+      cursor: pointer;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      min-height: 40px;
+    }
+
+    button:hover:not(:disabled) {
+      background-color: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      background-color: #94a3b8;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .btn-secondary {
+      background-color: var(--secondary);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      box-shadow: none;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background-color: var(--secondary-hover);
+    }
+
+    .btn-danger {
+      background-color: var(--danger-bg);
+      color: var(--danger);
+      border: 1px solid #fecaca;
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background-color: #fee2e2;
+      color: var(--danger-hover);
+      border-color: #fca5a5;
+    }
+
+    .btn-stop {
+      background-color: var(--danger);
+      border-color: var(--danger);
+      color: white;
+    }
+
+    .btn-stop:hover:not(:disabled) {
+      background-color: var(--danger-hover);
+      border-color: #b91c1c;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin: 24px 0;
+      box-shadow: var(--shadow);
+    }
+
+    .timer-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      color: #fff;
+      padding: 32px 48px;
+      border-radius: 24px;
+      box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.05), 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+      margin: 16px 0;
+      min-width: 320px;
+      border: 1px solid #334155;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .timer-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 100%;
+      background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.15), transparent 60%);
+      pointer-events: none;
+    }
+
+    .big {
+      font-size: 72px;
+      font-weight: 700;
+      letter-spacing: -2px;
+      line-height: 1;
+      text-shadow: 0 0 24px rgba(59, 130, 246, 0.5);
+      position: relative;
+      z-index: 1;
+      font-feature-settings: "tnum";
+    }
+
+    .timer-label {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #94a3b8;
+      margin-top: 12px;
+      font-weight: 500;
+    }
+
+    .muted {
+      color: var(--text-muted);
+    }
+
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      margin: 16px 0;
+      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      background: var(--card-bg);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    th,
+    td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+      vertical-align: middle;
+      font-size: 14px;
+    }
+
+    th {
+      background-color: var(--secondary);
+      font-weight: 600;
+      color: var(--text-main);
+      white-space: nowrap;
+    }
+
+    th:first-child {
+      border-top-left-radius: 12px;
+    }
+
+    th:last-child {
+      border-top-right-radius: 12px;
+    }
+
+    tbody tr:hover {
+      background-color: #f8fafc;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-container {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 20px;
+      background-color: var(--secondary);
+      border-radius: 16px;
+      border: 1px dashed #cbd5e1;
+    }
+
+    .warn {
+      color: #b45309;
+      background-color: #fef3c7;
+      border: 1px solid #fde68a;
+    }
+
+    .ok {
+      color: #047857;
+      background-color: #d1fae5;
+      border: 1px solid #a7f3d0;
+    }
+
+    .nepaleista {
+      color: var(--text-muted);
+      background-color: #e2e8f0;
+      border: 1px solid #cbd5e1;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      align-items: start;
+    }
+
+    @media (max-width: 1100px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .hint {
+      font-size: 13px;
+      margin-top: 6px;
+      display: block;
+      color: var(--text-muted);
+    }
+
+    .mono {
+      font-family: var(--font-mono);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+    }
+
+    @media (max-width: 900px) {
+      .split {
+        grid-template-columns: 1fr;
+        flex-direction: column-reverse;
+        display: flex;
+      }
+    }
+
+    .w100 {
+      width: 100%;
+    }
+
+    .mini {
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      min-height: 32px;
+    }
+
+    .small {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .main-controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 32px;
+    }
+
+    .timer-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      min-width: 320px;
+    }
+
+    .controls-section {
+      flex: 2;
+      display: flex;
+      flex-direction: column;
+      min-width: 300px;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Laikmatis + resursų logas</h1>
+  <p class="muted">
+    Šitas HTML įrankis padeda kaupti matavimus: (1) laiką (Start→Stop) kiekvienai komandai, (2) resursus (CPU/RAM/SWAP)
+    kiekvienai komandai atskirai ir (3) laiką per kiek pasiekta tavo stebima RAM apkrova (pvz. „10 langų“ scenarijus).
+    Windows resursų jis neskaito automatiškai — tu suvedi skaičius iš Task Manager / Resource Monitor.
+  </p>
+
+  <div class="card" style="border: none; background: transparent; padding: 0; box-shadow: none;">
+    <div class="main-controls">
+      <div class="controls-section">
+        <div class="card" style="margin-top: 0; flex: 1; display: flex; flex-direction: column;">
+          <div class="row">
+            <label for="cmd">Komanda</label>
+            <select id="cmd" style="min-width: 140px; font-weight: 500;"></select>
+
+            <button id="startBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              Start
+            </button>
+            <button id="stopBtn" disabled class="btn-stop">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              </svg>
+              Stop
+            </button>
+            <button id="undoBtn" disabled class="btn-secondary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+                <path d="M3 7v6h6"></path>
+                <path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"></path>
+              </svg>
+              Undo last
+            </button>
+          </div>
+
+          <div class="row" style="margin-bottom: 24px;">
+            <button id="resetBtn" class="btn-secondary mini">Reset matavimus</button>
+            <button id="clearLocalBtn" class="btn-secondary mini">Išvalyti lokalius</button>
+            <button id="exportBtn" class="btn-secondary mini">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Export CSV
+            </button>
+            <button id="importBtn" class="btn-secondary mini">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              Import CSV
+            </button>
+            <input type="file" id="importFile" accept=".csv" style="display: none;" />
+          </div>
+
+          <div class="status-container" style="margin-top: auto;">
+            <div><span class="pill nepaleista" id="statusPill">Statusas</span></div>
+            <div>
+              <span id="status" style="font-weight: 600; color: var(--text-main); display: none;">nepaleista</span>
+              <div class="hint muted" style="margin-top: 0;">Tipas: Start → padarai veiksmą → Stop, kai „ready“.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="timer-section">
+        <div class="timer-container">
+          <div class="big mono" id="timer">0.000</div>
+          <div class="timer-label">sekundės</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Laiko rezultatai (runs)</h2>
+      <div class="table-responsive">
+        <table id="resultsTable">
+          <thead>
+            <tr>
+              <th>Komanda</th>
+              <th>Run #</th>
+              <th>Laikas (s)</th>
+              <th>Pastaba</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="hint muted">Vidurkiai dešinėje. Gali rinkti daugiau nei 3, bet „3/3“ indikatorius padeda laikytis plano.
+      </p>
+
+      <hr style="border:none;border-top:1px solid #eee; margin:16px 0" />
+
+      <h2>Komandų sąrašas (pridėk daugiau)</h2>
+      <div class="split">
+        <div>
+          <div class="row">
+            <input id="newCmdName" class="w100"
+              placeholder="Komandos pavadinimas (pvz. B+M, E+L, Ed, Chrome, VS Code)" />
+          </div>
+          <div class="row">
+            <textarea id="newCmdDesc" class="w100" rows="3"
+              placeholder="Aprašymas (nebūtina): ką reiškia 'ready', ką darai testuojant, ir pan."></textarea>
+          </div>
+          <div class="row">
+            <button id="addCmdBtn">Pridėti komandą</button>
+            <span class="hint muted">Pavadinimas turi būti unikalus.</span>
+          </div>
+        </div>
+        <div>
+          <div class="table-responsive">
+            <table id="cmdTable">
+              <thead>
+                <tr>
+                  <th>Komanda</th>
+                  <th>Aprašymas</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <p class="hint muted">Komandos ir visi jų matavimai saugomi naršyklėje (localStorage).</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Vidurkiai</h2>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Komanda</th>
+              <th>Įrašai</th>
+              <th>Vidurkis (s)</th>
+            </tr>
+          </thead>
+          <tbody id="avgBody"></tbody>
+        </table>
+      </div>
+
+      <hr style="border:none;border-top:1px solid #eee; margin:16px 0" />
+
+      <hr style="border:none;border-top:1px solid #eee; margin:16px 0" />
+
+      <div class="row" style="justify-content: space-between;">
+        <h2>Resursų įrašai (CPU/RAM/SWAP)</h2>
+        <div>
+          <label for="resourceFilter" style="margin-right: 8px;">Filtruoti pagal komandą:</label>
+          <select id="resourceFilter" style="min-width: 120px;">
+            <option value="ALL">Visos komandos</option>
+          </select>
+        </div>
+      </div>
+      <p class="hint muted" style="margin-top: -8px; margin-bottom: 16px;">
+        Čia suvedi resursus atskirai kiekvienai komandai (kurią pasirinkai pačiame viršuje).
+        Pvz. scenarijus: „užkrovus 3 programas“ arba „10 langų“. Gali suvesti ir laiką, per kiek pasiekiama tavo stebima
+        rama.
+      </p>
+
+      <div class="row">
+        <label class="small">Scenarijus</label>
+        <input id="scenario" class="w100" placeholder="pvz. '3 programos', '10 langų', 'idle po boot'" />
+      </div>
+
+      <div class="row">
+        <label class="small">Laikas iki RAM (s)</label>
+        <input id="timeToRam" type="number" min="0" step="0.1" placeholder="pvz. 15.2" style="width:160px" />
+        <span class="hint muted">(įvesk ranka: per kiek laiko pasiekei norimą RAM būseną)</span>
+      </div>
+
+      <div class="row">
+        <label class="small">CPU (%)</label>
+        <input id="cpu" type="number" min="0" step="0.1" placeholder="pvz. 12.5" style="width:140px" />
+        <label class="small">RAM (MB)</label>
+        <input id="ram" type="number" min="0" step="1" placeholder="pvz. 2450" style="width:160px" />
+        <label class="small">SWAP (MB)</label>
+        <input id="swap" type="number" min="0" step="1" placeholder="pvz. 300" style="width:150px" />
+      </div>
+
+      <div class="row">
+        <button id="addResourceBtn">Pridėti resursų įrašą šiai komandai</button>
+        <button id="undoResourceBtn" class="btn-secondary" disabled>Undo resursų įrašą</button>
+        <span id="resSaved" class="muted"></span>
+      </div>
+
+      <div class="table-responsive">
+        <table id="resourceTable">
+          <thead>
+            <tr>
+              <th>Komanda</th>
+              <th>Scenarijus</th>
+              <th>Laikas iki RAM (s)</th>
+              <th>CPU (%)</th>
+              <th>RAM (MB)</th>
+              <th>SWAP (MB)</th>
+              <th>Timestamp</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <details>
+        <summary class="muted">Diagnostika (testai)</summary>
+        <p class="hint muted">Patikrina: vidurkis, resursų įrašų struktūra, CSV generavimas.</p>
+        <div class="row">
+          <button id="runTestsBtn" class="btn-secondary">Paleisti testus</button>
+          <span id="testOut" class="muted"></span>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <script>
+    const cmdEl = document.getElementById('cmd');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const undoBtn = document.getElementById('undoBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const clearLocalBtn = document.getElementById('clearLocalBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const importBtn = document.getElementById('importBtn');
+    const importFile = document.getElementById('importFile');
+
+    const timerEl = document.getElementById('timer');
+    const statusEl = document.getElementById('status');
+
+    const resultsTbody = document.querySelector('#resultsTable tbody');
+    const avgBody = document.getElementById('avgBody');
+
+    const newCmdName = document.getElementById('newCmdName');
+    const newCmdDesc = document.getElementById('newCmdDesc');
+    const addCmdBtn = document.getElementById('addCmdBtn');
+    const cmdTableBody = document.querySelector('#cmdTable tbody');
+
+    const scenarioEl = document.getElementById('scenario');
+    const timeToRamEl = document.getElementById('timeToRam');
+    const cpuEl = document.getElementById('cpu');
+    const ramEl = document.getElementById('ram');
+    const swapEl = document.getElementById('swap');
+    const addResourceBtn = document.getElementById('addResourceBtn');
+    const undoResourceBtn = document.getElementById('undoResourceBtn');
+    const resSaved = document.getElementById('resSaved');
+
+    const resourceTbody = document.querySelector('#resourceTable tbody');
+
+    const runTestsBtn = document.getElementById('runTestsBtn');
+    const testOut = document.getElementById('testOut');
+    const resourceFilter = document.getElementById('resourceFilter');
+
+    let running = false;
+    let t0 = 0;
+    let rafId = null;
+
+    const STORAGE_KEY = 'bootTimerState_v3';
+
+    const state = {
+      commands: {
+        'B+M': { desc: '' },
+        'E+L': { desc: '' },
+        'Ed': { desc: '' }
+      },
+      runs: {
+        'B+M': [],
+        'E+L': [],
+        'Ed': []
+      },
+      // cmd -> [{scenario, time_to_ram_s, cpu, ram_mb, swap_mb, ts}]
+      resourceSamples: {
+        'B+M': [],
+        'E+L': [],
+        'Ed': []
+      },
+      lastAdded: null,         // {cmd, index}
+      lastResourceAdded: null  // {cmd, index}
+    };
+
+    function nowMs() { return performance.now(); }
+
+    const statusPill = document.getElementById('statusPill');
+    function setStatus(text, cls) {
+      statusEl.textContent = text;
+      statusEl.className = cls || 'muted';
+      statusEl.style.display = 'none';
+      if (statusPill) {
+        statusPill.textContent = text;
+        statusPill.className = 'pill ' + (cls || 'nepaleista');
+      }
+    }
+
+    function formatSec(s) { return (Math.round(s * 1000) / 1000).toFixed(3); }
+
+    function tick() {
+      if (!running) return;
+      const sec = (nowMs() - t0) / 1000;
+      timerEl.textContent = formatSec(sec);
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function safeText(s) {
+      return String(s ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+    }
+
+    function persist() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function ensureCommandData() {
+      for (const name of Object.keys(state.commands)) {
+        if (!state.runs[name]) state.runs[name] = [];
+        if (!state.resourceSamples[name]) state.resourceSamples[name] = [];
+      }
+      for (const name of Object.keys(state.runs)) {
+        if (!state.commands[name]) delete state.runs[name];
+      }
+      for (const name of Object.keys(state.resourceSamples)) {
+        if (!state.commands[name]) delete state.resourceSamples[name];
+      }
+    }
+
+    function rebuildCommandSelect() {
+      const prevCmd = cmdEl.value;
+      const prevFilter = resourceFilter.value;
+
+      cmdEl.innerHTML = '';
+      resourceFilter.innerHTML = '<option value="ALL">Visos komandos</option>';
+
+      const names = Object.keys(state.commands).sort((a, b) => a.localeCompare(b, 'lt'));
+      for (const name of names) {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        cmdEl.appendChild(opt);
+
+        const filterOpt = document.createElement('option');
+        filterOpt.value = name;
+        filterOpt.textContent = name;
+        resourceFilter.appendChild(filterOpt);
+      }
+
+      if (prevCmd && state.commands[prevCmd]) cmdEl.value = prevCmd;
+      if (prevFilter === 'ALL' || state.commands[prevFilter]) resourceFilter.value = prevFilter;
+    }
+
+    function renderCommandsTable() {
+      cmdTableBody.innerHTML = '';
+      const names = Object.keys(state.commands).sort((a, b) => a.localeCompare(b, 'lt'));
+      for (const name of names) {
+        const desc = state.commands[name]?.desc ?? '';
+
+        const tr = document.createElement('tr');
+
+        const tdName = document.createElement('td');
+        const b = document.createElement('b');
+        b.textContent = name;
+        tdName.appendChild(b);
+
+        const tdDesc = document.createElement('td');
+        tdDesc.className = 'muted';
+        tdDesc.textContent = desc;
+
+        const tdAct = document.createElement('td');
+        tdAct.style.textAlign = 'right';
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn-danger mini';
+        delBtn.textContent = 'Šalinti';
+        delBtn.addEventListener('click', () => {
+          if (!confirm(`Tikrai šalinti komandą „${name}“ ir visus jos įrašus (runs + resursai)?`)) return;
+          delete state.commands[name];
+          delete state.runs[name];
+          delete state.resourceSamples[name];
+          state.lastAdded = null;
+          state.lastResourceAdded = null;
+          ensureCommandData();
+          rebuildCommandSelect();
+          renderAll();
+        });
+        tdAct.appendChild(delBtn);
+
+        tr.appendChild(tdName);
+        tr.appendChild(tdDesc);
+        tr.appendChild(tdAct);
+        cmdTableBody.appendChild(tr);
+      }
+    }
+
+    function renderRunsTable() {
+      resultsTbody.innerHTML = '';
+      const all = [];
+      for (const name of Object.keys(state.runs)) {
+        state.runs[name].forEach((r, idx) => {
+          all.push({ cmd: name, idx: idx + 1, ...r });
+        });
+      }
+      all.sort((a, b) => a.ts - b.ts);
+
+      for (const r of all) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><b>${safeText(r.cmd)}</b></td>
+          <td>${r.idx}</td>
+          <td class="mono">${formatSec(r.seconds)}</td>
+          <td class="muted">${safeText(r.note)}</td>
+        `;
+        resultsTbody.appendChild(tr);
+      }
+    }
+
+    function renderAverages() {
+      avgBody.innerHTML = '';
+      const names = Object.keys(state.commands).sort((a, b) => a.localeCompare(b, 'lt'));
+      for (const name of names) {
+        const arr = (state.runs[name] ?? []).map(x => x.seconds);
+        const n = arr.length;
+        const avg = n ? (arr.reduce((a, b) => a + b, 0) / n) : 0;
+        const done = n >= 3;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><b>${safeText(name)}</b></td>
+          <td>${n}/3</td>
+          <td class="${done ? 'ok' : 'warn'} mono">${n ? formatSec(avg) : '-'}</td>
+        `;
+        avgBody.appendChild(tr);
+      }
+    }
+
+    function renderResourcesTable() {
+      resourceTbody.innerHTML = '';
+      const all = [];
+      const filterCmd = resourceFilter.value;
+
+      for (const cmd of Object.keys(state.resourceSamples)) {
+        if (filterCmd !== 'ALL' && filterCmd !== cmd) continue;
+
+        (state.resourceSamples[cmd] || []).forEach((r) => {
+          all.push({ cmd, ...r });
+        });
+      }
+      all.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+
+      for (const r of all) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><b>${safeText(r.cmd)}</b></td>
+          <td class="muted">${safeText(r.scenario)}</td>
+          <td class="mono">${r.time_to_ram_s ?? ''}</td>
+          <td class="mono">${r.cpu ?? ''}</td>
+          <td class="mono">${r.ram_mb ?? ''}</td>
+          <td class="mono">${r.swap_mb ?? ''}</td>
+          <td class="mono">${r.ts ? new Date(r.ts).toISOString() : ''}</td>
+        `;
+        resourceTbody.appendChild(tr);
+      }
+
+      undoResourceBtn.disabled = !state.lastResourceAdded;
+
+      if (state.lastResourceAdded) {
+        resSaved.textContent = 'Resursų įrašas pridėtas ✅';
+      } else {
+        resSaved.textContent = '';
+      }
+    }
+
+    function renderAll() {
+      undoBtn.disabled = !state.lastAdded;
+      ensureCommandData();
+      rebuildCommandSelect();
+      renderCommandsTable();
+      renderRunsTable();
+      renderAverages();
+      renderResourcesTable();
+      persist();
+    }
+
+    function load() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+
+        // SVARBU: confirm pranešimas turi būti legalus JS string.
+        // Naudojam template literal ir vengiam "tikrų" newline'ų single-quote string'e.
+        const keep = confirm(`Rasti ankstesni duomenys šiame naršyklės profilyje. Atkurti?\n\nOK = atkurti\nCancel = išvalyti ir pradėti nuo nulio`);
+        if (!keep) {
+          localStorage.removeItem(STORAGE_KEY);
+          return;
+        }
+
+        const loaded = JSON.parse(raw);
+        if (loaded && loaded.commands && loaded.runs) {
+          state.commands = loaded.commands;
+          state.runs = loaded.runs;
+          state.resourceSamples = loaded.resourceSamples || {};
+          state.lastAdded = loaded.lastAdded || null;
+          state.lastResourceAdded = loaded.lastResourceAdded || null;
+          ensureCommandData();
+        }
+      } catch (e) {
+        console.error('Load failed:', e);
+      }
+    }
+
+    // ---- Laikmatis ----
+    startBtn.addEventListener('click', () => {
+      if (running) return;
+      running = true;
+      t0 = nowMs();
+      setStatus('matuojama…', 'warn');
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+      cmdEl.disabled = true;
+
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(tick);
+    });
+
+    stopBtn.addEventListener('click', () => {
+      if (!running) return;
+      running = false;
+
+      const sec = (nowMs() - t0) / 1000;
+      timerEl.textContent = formatSec(sec);
+
+      const cmd = cmdEl.value;
+      const note = prompt(`Pastaba šitam run (${cmd})? (nebūtina)`, '') || '';
+
+      if (!state.runs[cmd]) state.runs[cmd] = [];
+      state.runs[cmd].push({ seconds: sec, note, ts: Date.now() });
+      state.lastAdded = { cmd, index: state.runs[cmd].length - 1 };
+
+      setStatus('įrašyta ✅', 'ok');
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+      cmdEl.disabled = false;
+
+      renderAll();
+    });
+
+    undoBtn.addEventListener('click', () => {
+      if (!state.lastAdded) return;
+      const { cmd, index } = state.lastAdded;
+      if (state.runs[cmd] && state.runs[cmd][index]) {
+        state.runs[cmd].splice(index, 1);
+      }
+      state.lastAdded = null;
+      renderAll();
+      setStatus('atšaukta', 'muted');
+    });
+
+    // ---- Resursų įrašai ----
+    addResourceBtn.addEventListener('click', () => {
+      const cmd = cmdEl.value;
+      const scenario = (scenarioEl.value || '').trim();
+      const timeToRam = timeToRamEl.value === '' ? null : Number(timeToRamEl.value);
+      const cpu = cpuEl.value === '' ? null : Number(cpuEl.value);
+      const ram = ramEl.value === '' ? null : Number(ramEl.value);
+      const swap = swapEl.value === '' ? null : Number(swapEl.value);
+
+      const nums = [timeToRam, cpu, ram, swap].filter(v => v !== null);
+      if (nums.some(v => Number.isNaN(v))) {
+        alert('Laikas/CPU/RAM/SWAP turi būti skaičiais.');
+        return;
+      }
+
+      if (!scenario) {
+        if (!confirm('Scenarijus tuščias. Pridėti vis tiek?')) return;
+      }
+
+      if (!state.resourceSamples[cmd]) state.resourceSamples[cmd] = [];
+      state.resourceSamples[cmd].push({
+        scenario,
+        time_to_ram_s: timeToRam,
+        cpu,
+        ram_mb: ram,
+        swap_mb: swap,
+        ts: Date.now()
+      });
+      state.lastResourceAdded = { cmd, index: state.resourceSamples[cmd].length - 1 };
+
+      // patogumui: paliekam scenario, bet nuvalom skaičius
+      timeToRamEl.value = '';
+      cpuEl.value = '';
+      ramEl.value = '';
+      swapEl.value = '';
+
+      setStatus('resursų įrašas pridėtas ✅', 'ok');
+      renderAll();
+    });
+
+    undoResourceBtn.addEventListener('click', () => {
+      if (!state.lastResourceAdded) return;
+      const { cmd, index } = state.lastResourceAdded;
+      if (state.resourceSamples[cmd] && state.resourceSamples[cmd][index]) {
+        state.resourceSamples[cmd].splice(index, 1);
+      }
+      state.lastResourceAdded = null;
+      renderAll();
+      setStatus('resursų įrašas atšauktas', 'muted');
+    });
+
+    resourceFilter.addEventListener('change', renderResourcesTable);
+
+    // ---- Reset / clear ----
+    resetBtn.addEventListener('click', () => {
+      if (!confirm('Resetinti matavimus (runs + resursų įrašai) visoms komandoms?')) return;
+      for (const k of Object.keys(state.runs)) state.runs[k] = [];
+      for (const k of Object.keys(state.resourceSamples)) state.resourceSamples[k] = [];
+      state.lastAdded = null;
+      state.lastResourceAdded = null;
+      timerEl.textContent = '0.000';
+      setStatus('nepaleista', 'warn');
+      renderAll();
+    });
+
+    clearLocalBtn.addEventListener('click', () => {
+      if (!confirm('Išvalyti lokalius duomenis (localStorage) šiam puslapiui?')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      state.commands = { 'B+M': { desc: '' }, 'E+L': { desc: '' }, 'Ed': { desc: '' } };
+      state.runs = { 'B+M': [], 'E+L': [], 'Ed': [] };
+      state.resourceSamples = { 'B+M': [], 'E+L': [], 'Ed': [] };
+      state.lastAdded = null;
+      state.lastResourceAdded = null;
+      timerEl.textContent = '0.000';
+      setStatus('išvalyta', 'muted');
+      renderAll();
+    });
+
+    // ---- Komandos ----
+    addCmdBtn.addEventListener('click', () => {
+      const name = (newCmdName.value || '').trim();
+      const desc = (newCmdDesc.value || '').trim();
+      if (!name) {
+        alert('Įvesk komandos pavadinimą.');
+        return;
+      }
+      if (state.commands[name]) {
+        alert('Tokia komanda jau yra. Pavadinimas turi būti unikalus.');
+        return;
+      }
+      state.commands[name] = { desc };
+      state.runs[name] = [];
+      state.resourceSamples[name] = [];
+      newCmdName.value = '';
+      newCmdDesc.value = '';
+      renderAll();
+      setStatus('komanda pridėta ✅', 'ok');
+    });
+
+    // ---- CSV eksportas ----
+    function buildCsvText() {
+      // Vienas CSV su skirtingais type: command | run | resource_sample
+      const header = ['type', 'cmd', 'run', 'seconds', 'note', 'timestamp', 'cmd_desc', 'scenario', 'time_to_ram_s', 'cpu_pct', 'ram_mb', 'swap_mb'].join(',');
+      const lines = [header];
+
+      // commands
+      for (const cmd of Object.keys(state.commands).sort((a, b) => a.localeCompare(b, 'lt'))) {
+        const desc = String(state.commands[cmd]?.desc ?? '').replaceAll('"', '""');
+        lines.push(['command', cmd, '', '', '', '', `"${desc}"`, '', '', '', '', ''].join(','));
+      }
+
+      // runs
+      for (const cmd of Object.keys(state.runs).sort((a, b) => a.localeCompare(b, 'lt'))) {
+        (state.runs[cmd] || []).forEach((r, idx) => {
+          const note = String(r.note || '').replaceAll('"', '""');
+          lines.push(['run', cmd, String(idx + 1), formatSec(r.seconds), `"${note}"`, new Date(r.ts).toISOString(), '', '', '', '', '', ''].join(','));
+        });
+      }
+
+      // resource samples
+      for (const cmd of Object.keys(state.resourceSamples).sort((a, b) => a.localeCompare(b, 'lt'))) {
+        (state.resourceSamples[cmd] || []).forEach((r) => {
+          const scenario = String(r.scenario || '').replaceAll('"', '""');
+          lines.push([
+            'resource_sample',
+            cmd,
+            '',
+            '',
+            '',
+            new Date(r.ts).toISOString(),
+            '',
+            `"${scenario}"`,
+            (r.time_to_ram_s ?? ''),
+            (r.cpu ?? ''),
+            (r.ram_mb ?? ''),
+            (r.swap_mb ?? '')
+          ].join(','));
+        });
+      }
+
+      // SVARBU: naudojam \n (escape), o ne "tikrą" naują eilutę string'e.
+      return lines.join('\n');
+    }
+
+    exportBtn.addEventListener('click', () => {
+      const csvText = buildCsvText();
+      const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'boot_timer_results.csv';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    // ---- CSV importas ----
+    function parseCsvLine(text) {
+      if (!text) return [];
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        if (inQuotes) {
+          if (char === '"') {
+            if (i + 1 < text.length && text[i + 1] === '"') {
+              current += '"';
+              i++; // praleidžiam escape'intą kabutę
+            } else {
+              inQuotes = false;
+            }
+          } else {
+            current += char;
+          }
+        } else {
+          if (char === '"') {
+            inQuotes = true;
+          } else if (char === ',') {
+            result.push(current);
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+      }
+      result.push(current);
+      return result;
+    }
+
+    importBtn.addEventListener('click', () => {
+      if (!confirm('Dėmesio: Importavimas perrašys esamus duomenis. Ar tikrai norite tęsti?')) return;
+      importFile.click();
+    });
+
+    importFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        try {
+          const csvText = event.target.result;
+          const rows = csvText.split('\n').filter(r => r.trim().length > 0);
+
+          if (rows.length < 2) throw new Error("Nepakanka duomenų failo eilutėse.");
+          // Pirmiausia išvalom dabartinę būseną (State)
+          const newState = {
+            commands: {},
+            runs: {},
+            resourceSamples: {},
+            lastAdded: null,
+            lastResourceAdded: null
+          };
+
+          for (let i = 1; i < rows.length; i++) {
+            const cols = parseCsvLine(rows[i]);
+            // Struktūra eksporte: ['type', 'cmd', 'run', 'seconds', 'note', 'timestamp', 'cmd_desc', 'scenario', 'time_to_ram_s', 'cpu_pct', 'ram_mb', 'swap_mb']
+            const type = cols[0];
+            const cmd = cols[1];
+
+            if (!newState.commands[cmd]) newState.commands[cmd] = { desc: '' };
+            if (!newState.runs[cmd]) newState.runs[cmd] = [];
+            if (!newState.resourceSamples[cmd]) newState.resourceSamples[cmd] = [];
+
+            if (type === 'command') {
+              newState.commands[cmd].desc = (cols[6] || '').trim();
+            } else if (type === 'run') {
+              const sec = parseFloat(cols[3]);
+              const note = (cols[4] || '').trim();
+              const ts = new Date(cols[5]).getTime() || Date.now();
+              newState.runs[cmd].push({ seconds: sec, note, ts });
+            } else if (type === 'resource_sample') {
+              const ts = new Date(cols[5]).getTime() || Date.now();
+              const scenario = (cols[7] || '').trim();
+              const timeToRam = cols[8] ? parseFloat(cols[8]) : null;
+              const cpu = cols[9] ? parseFloat(cols[9]) : null;
+              const ram = cols[10] ? parseFloat(cols[10]) : null;
+              const swap = cols[11] ? parseFloat(cols[11]) : null;
+              newState.resourceSamples[cmd].push({
+                scenario, time_to_ram_s: timeToRam, cpu, ram_mb: ram, swap_mb: swap, ts
+              });
+            }
+          }
+
+          // Perkeliam naują state į app
+          state.commands = newState.commands;
+          state.runs = newState.runs;
+          state.resourceSamples = newState.resourceSamples;
+          state.lastAdded = null;
+          state.lastResourceAdded = null;
+
+          ensureCommandData();
+          renderAll();
+          setStatus('duomenys importuoti ✅', 'ok');
+
+        } catch (err) {
+          console.error("Import failure:", err);
+          alert('Nepavyko importuoti CSV failo. Gali būti netinkamas formatas.');
+        } finally {
+          importFile.value = ''; // išvalyti failo input
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    // ---- Testai ----
+    function assert(cond, msg) { if (!cond) throw new Error(msg); }
+
+    function runTests() {
+      const backup = JSON.parse(JSON.stringify(state));
+
+      // 1) Vidurkis
+      state.commands = { 'A': { desc: 'x' }, 'B': { desc: 'y' } };
+      state.runs = { 'A': [{ seconds: 1, note: '', ts: 1 }, { seconds: 2, note: '', ts: 2 }, { seconds: 3, note: '', ts: 3 }], 'B': [] };
+      state.resourceSamples = { 'A': [], 'B': [] };
+      ensureCommandData();
+      rebuildCommandSelect();
+      renderAverages();
+
+      const avgRow = Array.from(avgBody.querySelectorAll('tr')).find(tr => tr.textContent.includes('A'));
+      assert(avgRow, 'Test: neradau A eilutės vidurkių lentelėje');
+      assert(avgRow.textContent.includes('2.000'), 'Test: A vidurkis turi būti 2.000');
+
+      // 2) Resursų įrašas
+      state.resourceSamples['A'].push({ scenario: '10 langų', time_to_ram_s: 12.5, cpu: 9.1, ram_mb: 3000, swap_mb: 0, ts: 100 });
+      assert(state.resourceSamples['A'].length === 1, 'Test: resursų įrašas nepridėtas');
+
+      // 3) CSV generavimas: turi turėti resource_sample eilutę ir \n
+      const csvText = buildCsvText();
+      assert(csvText.includes('\n'), 'Test: CSV turi turėti \\n');
+      assert(csvText.includes('resource_sample'), 'Test: CSV turi turėti resource_sample');
+      assert(csvText.startsWith('type,cmd,run'), 'Test: CSV turi prasidėti headeriu');
+
+      // 4) CSV neturi turėti "undefined" reikšmių header'iuose
+      assert(!csvText.startsWith('undefined'), 'Test: CSV negali prasidėti undefined');
+
+      // restore
+      state.commands = backup.commands;
+      state.runs = backup.runs;
+      state.resourceSamples = backup.resourceSamples;
+      state.lastAdded = backup.lastAdded;
+      state.lastResourceAdded = backup.lastResourceAdded;
+      ensureCommandData();
+      renderAll();
+
+      return 'Testai OK ✅';
+    }
+
+    runTestsBtn.addEventListener('click', () => {
+      try {
+        const msg = runTests();
+        testOut.textContent = msg;
+      } catch (e) {
+        console.error(e);
+        testOut.textContent = 'Testai FAIL ❌ (žiūrėk Console)';
+      }
+    });
+
+    // init
+    load();
+    ensureCommandData();
+    renderAll();
+    setStatus('nepaleista', 'warn');
+  </script>
+</body>
+
+</html>

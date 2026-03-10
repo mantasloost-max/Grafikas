@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Akademinis Kalendorius (Layered Fix v27)</title>
+  
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://npmcdn.com/flatpickr/dist/l10n/lt.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            paper: '#f8fafc',
+            navy: { 900: '#0f172a', 800: '#1e293b' },
+            gold: { 500: '#f59e0b' }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body { background-color: #f8fafc; color: #0f172a; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    
+    .cell { position: relative; height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 2px; border-radius: 6px; font-size: 13px; cursor: pointer; transition: all 0.1s; }
+    .cell:hover { background-color: #e2e8f0; z-index: 10; }
+    .cell.today { background-color: #0f172a; color: white; font-weight: 700; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.3); }
+    .cell.vac { background-image: repeating-linear-gradient(45deg, #f1f5f9, #f1f5f9 5px, #e2e8f0 5px, #e2e8f0 6px); color: #94a3b8; }
+    .cell.sick { background-image: repeating-linear-gradient(45deg, #fef2f2, #fef2f2 5px, #fee2e2 5px, #fee2e2 6px); color: #ef4444; border: 1px solid #fecaca; }
+    .cell.weekend { background-color: #f8fafc; color: #64748b; }
+    .cell.sem-start { border-left: 3px solid #f59e0b; background-color: #fffbeb; }
+    .cell.sem-start::after { content: "II SEM"; position: absolute; top: -8px; left: -4px; font-size: 8px; font-weight: 800; color: #fff; background: #d97706; padding: 1px 3px; border-radius: 2px; z-index: 20; }
+
+    .markers-col { display: flex; flex-direction: column; gap: 2px; margin-top: 2px; width: 100%; align-items: center; padding: 0 6px; }
+    .marker-bar { height: 3px; width: 100%; border-radius: 2px; }
+    .cell.today .marker-bar { border: 1px solid rgba(255,255,255,0.4); }
+
+    .sticky-col { position: sticky; top: 80px; max-height: calc(100vh - 100px); overflow-y: auto; padding-right: 4px; }
+    .flatpickr-calendar { width: 260px !important; font-family: 'Inter', sans-serif; }
+    .flatpickr-day.selected { background: #0f172a !important; border-color: #0f172a !important; }
+
+    /* GRID STYLES */
+    .schedule-grid { display: grid; grid-template-columns: 40px repeat(13, minmax(70px, 1fr)); gap: 1px; background-color: #e2e8f0; border: 1px solid #e2e8f0; overflow-x: auto; }
+    .sg-header { background: #f1f5f9; padding: 4px; text-align: center; font-size: 10px; font-weight: bold; color: #64748b; display: flex; flex-direction: column; justify-content: center; }
+    .sg-day { background: #fff; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; color: #0f172a; padding: 4px; border-right: 1px solid #e2e8f0; }
+    .sg-row-content { grid-column: 2 / -1; position: relative; background: #fff; min-height: 70px; }
+    .grid-lines { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(13, 1fr); pointer-events: none; }
+    .grid-line { border-right: 1px dashed #e2e8f0; height: 100%; }
+
+    /* UNIFIED MODULE BLOCK */
+    .mod-block {
+        position: absolute; border-radius: 4px; color: #fff; overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.15); z-index: 10; transition: transform 0.1s, z-index 0.1s; 
+        border: 1px solid rgba(255,255,255,0.1);
+        /* Flex centered content */
+        display: flex; flex-direction: column; justify-content: center; text-align: center;
+    }
+    .mod-block:hover { transform: scale(1.02); z-index: 50; box-shadow: 0 6px 10px rgba(0,0,0,0.2); }
+    
+    .mod-block.is-override { border-left: 4px solid #f59e0b; }
+
+    /* TEXT WRAPPER - This sits on TOP of everything */
+    .mod-content {
+        position: relative;
+        z-index: 30; /* Higher than diff-overlay (20) */
+        padding: 2px 6px;
+        font-size: 11px;
+        line-height: 1.2;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.3); /* Ensure readability over lines */
+        pointer-events: none;
+    }
+    .mod-content span.t { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+    .mod-content span.g { opacity: 0.95; font-size: 10px; display: block; }
+    .mod-content span.s { margin-top: 2px; padding-top: 2px; border-top: 1px solid rgba(255,255,255,0.4); font-size: 9px; font-weight: 600; opacity: 1; display: block; }
+
+    /* DIFFERENCE OVERLAYS */
+    .diff-overlay {
+        position: absolute;
+        top: 0; bottom: 0;
+        z-index: 20; /* Between background(10) and text(30) */
+        pointer-events: none;
+    }
+    
+    /* ADDED PART - Bright Green Dashed */
+    .diff-added {
+        border: 2px dashed #4ade80; /* Brighter Green */
+        background-color: rgba(74, 222, 128, 0.15); /* Light transparent green fill */
+        box-shadow: 0 0 5px rgba(74, 222, 128, 0.3);
+    }
+
+    /* REMOVED PART - Red Ghost */
+    .diff-removed {
+        background-color: #fee2e2 !important; 
+        border: 2px dashed #ef4444; 
+        opacity: 0.8;
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ef4444;
+        font-size: 10px;
+        font-weight: bold;
+    }
+
+    .report-mod-title { font-weight: bold; color: #1e293b; margin-top: 6px; font-size: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 2px; }
+    .report-item { margin-top: 4px; padding-left: 8px; font-size: 11px; color: #475569; display: flex; gap: 6px; align-items: start; }
+    .report-change { font-weight: 600; color: #b45309; }
+    .report-good { color: #15803d; font-weight: 600; }
+    .report-bad { color: #b91c1c; font-weight: 600; }
+    .report-info { color: #2563eb; font-weight: 600; }
+    .report-start { color: #059669; font-weight: 800; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; background: #d1fae5; padding: 1px 4px; border-radius: 4px; }
+    .report-finish { color: #dc2626; font-weight: 800; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; background: #fee2e2; padding: 1px 4px; border-radius: 4px; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-200 shadow-sm">
+    <div class="max-w-[1920px] mx-auto px-6 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 bg-navy-900 text-white rounded flex items-center justify-center shadow-md">
+          <span class="material-symbols-outlined text-lg">calendar_month</span>
+        </div>
+        <div>
+          <h1 class="font-bold text-navy-900 leading-none text-base">Akademinis Kalendorius</h1>
+          <div id="todayStr" class="text-[10px] text-slate-500 uppercase tracking-wide font-medium">Kraunama...</div>
+        </div>
+      </div>
+      
+      <div class="flex gap-2">
+        <button id="btnWeekly" class="px-3 py-1.5 text-xs font-bold bg-white text-navy-900 border border-slate-200 rounded hover:bg-slate-50 flex items-center gap-1 shadow-sm transition-transform active:scale-95">
+           <span class="material-symbols-outlined text-sm">grid_view</span> Tvarkaraštis
+        </button>
+        <div class="w-px h-6 bg-slate-200 mx-1"></div>
+        <button id="btnExport" class="px-3 py-1.5 text-xs font-medium bg-white border border-slate-200 rounded hover:bg-slate-50 text-slate-600 flex items-center gap-1">
+          <span class="material-symbols-outlined text-sm">download</span> Eksportuoti
+        </button>
+        <label class="px-3 py-1.5 text-xs font-medium bg-white border border-slate-200 rounded hover:bg-slate-50 text-slate-600 flex items-center gap-1 cursor-pointer">
+          <span class="material-symbols-outlined text-sm">upload</span> Importuoti
+          <input type="file" id="fileImport" class="hidden" accept=".json">
+        </label>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-[1920px] mx-auto w-full p-6 lg:p-8 flex flex-col xl:flex-row gap-8">
+    <div class="flex-1 flex flex-col gap-6">
+      
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-4 items-end">
+        <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Mokslo Metai</label><select id="acadYearSelect" class="block w-32 mt-1 text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 cursor-pointer"></select></div>
+        <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Grupė</label><select id="groupFilter" class="block w-28 mt-1 text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 cursor-pointer"><option value="">Visos</option></select></div>
+        <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Modulis</label><select id="moduleFilter" class="block w-48 mt-1 text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 cursor-pointer"><option value="">Visi</option></select></div>
+        <div class="border-l border-slate-200 pl-4 ml-2">
+            <label class="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">2 Semestro Pradžia</label>
+            <input id="sem2Start" type="text" class="block w-32 mt-1 text-sm border-indigo-200 rounded-lg focus:border-indigo-500 focus:ring-indigo-500 cursor-pointer bg-indigo-50/30" placeholder="Pasirinkti...">
+        </div>
+      </div>
+
+      <div id="yearWall" class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6"></div>
+
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex justify-between items-center mb-4">
+             <h3 class="font-semibold text-navy-900 text-sm flex items-center gap-2"><span class="material-symbols-outlined text-gold-500 text-lg">flight_takeoff</span> Atostogos / Liga</h3>
+             <div class="flex gap-2">
+                 <button id="btnSickThisWeek" class="bg-red-50 text-red-700 hover:bg-red-100 text-[11px] font-bold px-3 py-1.5 rounded border border-red-200 transition-colors flex items-center gap-1"><span class="material-symbols-outlined text-sm">medication</span> Sergu šią sav.</button>
+                 <button id="btnAutoImage" class="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-[11px] font-bold px-3 py-1.5 rounded border border-indigo-200 transition-colors">+ 2025-26 Grafikas</button>
+                 <button id="btnAutoHolidays" class="bg-slate-50 text-slate-600 hover:bg-slate-100 text-[11px] font-bold px-3 py-1.5 rounded border border-slate-200 transition-colors">+ Importuoti LT Šventes</button>
+             </div>
+        </div>
+        <div class="flex flex-wrap gap-3 items-end bg-slate-50 p-3 rounded-lg border border-slate-100">
+          <div><label class="text-[10px] font-bold text-slate-400 uppercase">Tipas</label>
+            <select id="vType" class="block w-28 text-xs border-slate-200 rounded focus:border-navy-900 focus:ring-navy-900"><option value="vac">Atostogos</option><option value="sick">Liga</option></select>
+          </div>
+          <div><label class="text-[10px] font-bold text-slate-400 uppercase">Nuo</label><input id="vFrom" type="text" class="block w-28 text-xs border-slate-200 rounded focus:border-navy-900 focus:ring-navy-900" placeholder="Data..."></div>
+          <div><label class="text-[10px] font-bold text-slate-400 uppercase">Iki</label><input id="vTo" type="text" class="block w-28 text-xs border-slate-200 rounded focus:border-navy-900 focus:ring-navy-900" placeholder="Data..."></div>
+          <div class="flex-1 min-w-[140px]"><label class="text-[10px] font-bold text-slate-400 uppercase">Grupės</label><select id="vGroups" multiple class="block w-full text-xs border-slate-200 rounded h-[34px]" placeholder="Pasirinkti..."></select></div>
+          <button id="addVac" class="bg-navy-900 text-white text-xs font-medium px-4 py-2 rounded h-[34px] hover:bg-navy-800 transition-colors shadow-sm">Pridėti</button>
+        </div>
+        <div id="vacList" class="mt-4 flex flex-wrap gap-2"></div>
+      </div>
+    </div>
+
+    <aside class="w-full xl:w-96 flex-shrink-0">
+      <div class="sticky-col space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-lg p-6 relative overflow-hidden">
+          <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-navy-900 via-indigo-500 to-gold-500"></div>
+          <h2 class="font-bold text-navy-900 mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-slate-400">add_circle</span> Naujas Modulis</h2>
+          <div class="space-y-4">
+            <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pavadinimas</label><input id="mName" class="w-full text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 shadow-sm" placeholder="pvz. IN25V"></div>
+            <div class="grid grid-cols-2 gap-3">
+              <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Grupė</label><input id="mGroup" list="groupSuggestions" class="w-full text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 shadow-sm" placeholder="PI24"><datalist id="groupSuggestions"></datalist></div>
+              <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Spalva</label><div class="flex items-center gap-2"><input id="mColor" type="color" value="#3b82f6" class="h-9 w-full p-0 border-0 rounded cursor-pointer"></div></div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tikslas (val.)</label><input id="mTarget" type="number" min="1" class="w-full text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 shadow-sm" placeholder="48"></div>
+                <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pradžia</label><input id="mStart" type="text" class="w-full text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 shadow-sm" placeholder="YYYY-MM-DD"></div>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+              <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2 text-center">Savaitės planas</label>
+              <div id="scheduleInputs" class="space-y-2"></div>
+            </div>
+            <button id="addMod" class="w-full bg-navy-900 hover:bg-navy-800 text-white font-semibold py-2.5 rounded-lg shadow-md transition-all active:scale-[0.98]">Pridėti Modulį</button>
+          </div>
+        </div>
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Aktyvūs moduliai</h3>
+        <div id="miniList" class="space-y-4 pb-10"></div>
+      </div>
+    </aside>
+  </main>
+
+  <template id="dayDialogTpl">
+    <div class="fixed inset-0 z-[60] flex items-center justify-center bg-navy-900/50 backdrop-blur-sm overlay p-4 animate-in fade-in duration-200">
+      <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden dialog ring-1 ring-slate-200">
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+          <h3 class="font-bold text-navy-900">Dienos suvestinė: <span class="date font-normal text-slate-500 ml-1"></span></h3>
+          <button class="close text-slate-400 hover:text-navy-900 transition-colors"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="p-6">
+          <table class="w-full text-sm">
+            <thead class="text-xs text-slate-400 uppercase border-b border-slate-100"><tr><th class="text-left pb-2 font-semibold">Modulis</th><th class="pb-2 text-center font-semibold">Šiandien</th><th class="pb-2 text-center font-semibold">Viso</th><th class="pb-2 text-center font-semibold">Liko</th></tr></thead>
+            <tbody class="rows text-slate-600"></tbody>
+            <tfoot class="border-t border-slate-200 font-bold text-navy-900 bg-slate-50/50"><tr><td class="pt-3 pb-1 pl-2">VISO</td><td class="pt-3 pb-1 text-center sumDay">0</td><td class="pt-3 pb-1 text-center sumCum">0</td><td class="pt-3 pb-1 text-center sumLeft">0</td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template id="weeklyDialogTpl">
+    <div class="fixed inset-0 z-[60] flex items-center justify-center bg-navy-900/50 backdrop-blur-sm overlay p-4 animate-in fade-in duration-200">
+      <div class="bg-white rounded-xl shadow-2xl w-full max-w-[98vw] h-[90vh] overflow-hidden dialog ring-1 ring-slate-200 flex flex-col">
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 flex-shrink-0">
+          <div class="flex items-center gap-4">
+             <h3 class="font-bold text-navy-900 flex items-center gap-2"><span class="material-symbols-outlined">grid_view</span> Tvarkaraštis</h3>
+             <input id="weekPicker" type="text" class="w-40 text-xs border-slate-200 rounded-lg focus:ring-navy-900" placeholder="Pasirinkti savaitę...">
+          </div>
+          <button class="close text-slate-400 hover:text-navy-900 transition-colors"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="flex-1 overflow-auto bg-slate-100 p-4 flex flex-col gap-4">
+            <div id="gridContainer" class="bg-white shadow rounded-lg overflow-hidden border border-slate-200 flex-shrink-0"></div>
+            <div id="weekReportContainer" class="hidden bg-amber-50 border border-amber-200 rounded-lg p-4 shadow-sm flex-shrink-0">
+                <h4 class="font-bold text-amber-800 text-sm mb-2 flex items-center gap-2"><span class="material-symbols-outlined text-base">info</span> Pokyčiai lyginant su praėjusia savaite</h4>
+                <div id="weekReportContent" class="space-y-1"></div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template id="overrideDialogTpl">
+    <div class="fixed inset-0 z-[60] flex items-center justify-center bg-navy-900/50 backdrop-blur-sm overlay p-4">
+      <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden dialog p-6">
+        <h3 class="font-bold text-navy-900 mb-2 text-lg">Keisti grafiką</h3>
+        <p class="text-xs text-slate-500 mb-5 leading-relaxed">Nuo pasirinktos datos (imtinai) galios naujas savaitinis planas. (Laukeliai užpildyti dabartiniu planu)</p>
+        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Nuo datos</label>
+        <input id="ovFrom" type="text" class="w-full text-sm border-slate-200 rounded-lg mb-5 focus:ring-navy-900" placeholder="YYYY-MM-DD">
+        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Naujas planas (Pamokų sk. ir Pradžia)</label>
+        <div class="grid grid-cols-1 gap-2 mb-6" id="ovInputsContainer"></div>
+        <div class="flex justify-end gap-3 pt-2 border-t border-slate-100">
+          <button class="cancel px-4 py-2 text-xs font-semibold text-slate-500 hover:text-navy-900 hover:bg-slate-50 rounded transition-colors">Atšaukti</button>
+          <button class="save px-4 py-2 text-xs font-semibold bg-navy-900 text-white rounded hover:bg-navy-800 shadow transition-colors">Išsaugoti</button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    const $=(q,el=document)=>el.querySelector(q);
+    const $$=(q,el=document)=>Array.from(el.querySelectorAll(q));
+    const storageKey='acad_cal_final_hybrid_fix_v27';
+    const LT_MONTHS = ["Sausis", "Vasaris", "Kovas", "Balandis", "Gegužė", "Birželis", "Liepa", "Rugpjūtis", "Rugsėjis", "Spalis", "Lapkritis", "Gruodis"];
+    const DAYS_SHORT = ['Pi', 'An', 'Tr', 'Ke', 'Pe', 'Še', 'Se'];
+    const DAYS_FULL = ['Pirmadienį', 'Antradienį', 'Trečiadienį', 'Ketvirtadienį', 'Penktadienį', 'Šeštadienį', 'Sekmadienį'];
+    const LESSON_SLOTS = [
+      {id:0, t:"07:00 - 07:45"}, {id:1, t:"08:00 - 08:45"}, {id:2, t:"08:55 - 09:40"},
+      {id:3, t:"09:50 - 10:35"}, {id:4, t:"10:45 - 11:30"}, {id:5, t:"12:15 - 13:00"},
+      {id:6, t:"13:10 - 13:55"}, {id:7, t:"14:05 - 14:50"}, {id:8, t:"15:00 - 15:45"},
+      {id:9, t:"15:55 - 16:40"}, {id:10, t:"16:50 - 17:35"}, {id:11, t:"17:45 - 18:30"}, {id:12, t:"18:40 - 19:25"}
+    ];
+
+    let state=load()||{modules:[],vacations:[], sem2Start: ''};
+    function save(){localStorage.setItem(storageKey,JSON.stringify(state));}
+    function load(){try{return JSON.parse(localStorage.getItem(storageKey));}catch(e){return null;}}
+
+    function toLocalISO(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`;}
+    function todayISO(){const d=new Date();d.setHours(0,0,0,0);return toLocalISO(d);}
+    function yesterdayISO(){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-1);return toLocalISO(d);}
+    function parseISO(s){const [y,m,d]=s.split('-').map(Number);const dt=new Date(y,(m||1)-1,d||1);dt.setHours(0,0,0,0);return dt;}
+    function addDays(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r;}
+    function dayIndex(dateObj){const js=dateObj.getDay();return (js+6)%7;} 
+    function escapeHTML(s){return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+    
+    function vacationAppliesToGroup(v, group){
+      if(!v || !group) return Array.isArray(v.groups) ? v.groups.length===0 : true;
+      if(!Array.isArray(v.groups) || v.groups.length===0) return true; 
+      return v.groups.includes(group);
+    }
+    function getGroupEventType(dateObj, group){
+      const t=dateObj.getTime();
+      for(const v of state.vacations||[]){
+        if(!v.from||!v.to) continue;
+        if(!vacationAppliesToGroup(v, group)) continue;
+        const a=parseISO(v.from).getTime(),b=parseISO(v.to).getTime();
+        if(a<=t && t<=b) return v.type || 'vac';
+      }
+      return null;
+    }
+    function inVacationForGroup(dateObj, group){ return getGroupEventType(dateObj, group) !== null; }
+
+    function getEffectiveSchedule(mod,dateObj){
+      const ovs=(mod.overrides||[]).slice().filter(x=>x.from).sort((a,b)=>parseISO(a.from)-parseISO(b.from));
+      let sched=mod.sched||[0,0,0,0,0,0,0];
+      const t=dateObj.getTime();
+      for(const ov of ovs){
+        const f=parseISO(ov.from).getTime();
+        if(f<=t) sched=ov.sched||sched; else break;
+      }
+      return sched;
+    }
+    function getEffectiveStartSlot(mod, dateObj) {
+        const t = dateObj.getTime();
+        const ovs = (mod.overrides||[]).slice().filter(x=>x.from).sort((a,b)=>parseISO(a.from)-parseISO(b.from));
+        let starts = mod.schedStarts || [1,1,1,1,1,1,1];
+        for(const ov of ovs){
+            const f=parseISO(ov.from).getTime();
+            if(f<=t && ov.schedStarts) starts = ov.schedStarts; else break;
+        }
+        const day = dayIndex(dateObj);
+        return starts[day] !== undefined ? starts[day] : 1;
+    }
+    
+    function getDayInfo(mod, dateObj) {
+        const evtType = getGroupEventType(dateObj, mod.group);
+        if (evtType) return { count: 0, start: 1, event: evtType };
+        const idx = dayIndex(dateObj);
+        const count = Number(getEffectiveSchedule(mod,dateObj)[idx]||0);
+        const start = getEffectiveStartSlot(mod, dateObj);
+        return { count, start, event: null };
+    }
+
+    function isOverridden(mod, dateObj) {
+        const t = dateObj.getTime();
+        const ovs = (mod.overrides||[]).slice().filter(x=>x.from).sort((a,b)=>parseISO(a.from)-parseISO(b.from));
+        for(const ov of ovs){ if(parseISO(ov.from).getTime()<=t) return true; }
+        return false;
+    }
+
+    function dayPlanRaw(mod,dateObj){
+      if(parseISO(mod.start)>dateObj) return 0;
+      return getDayInfo(mod, dateObj).count;
+    }
+    function plannedByCapped(mod,dateISO){
+      const end=parseISO(dateISO);
+      let cur=parseISO(mod.start);
+      let acc=0;
+      for(let i=0;i<365*6 && cur<=end;i++){
+        const left=Math.max(0,Number(mod.target||0)-acc);
+        if(left<=0)break;
+        const raw=dayPlanRaw(mod,cur);
+        const add=Math.min(raw,left);
+        acc+=add;
+        cur=addDays(cur,1);
+      }
+      return acc;
+    }
+    function planForDate(mod,dateObj){
+      const prev=addDays(dateObj,-1);
+      const leftBefore=Math.max(0,Number(mod.target||0)-plannedByCapped(mod,toLocalISO(prev)));
+      if(leftBefore<=0) return 0;
+      const raw=dayPlanRaw(mod,dateObj);
+      return Math.min(raw,leftBefore);
+    }
+    function getFinishDate(mod){
+        let cur=parseISO(mod.start), acc=0;
+        for(let i=0;i<365*4;i++){
+            const raw=dayPlanRaw(mod,cur);
+            acc += Math.min(raw, Math.max(0, mod.target-acc));
+            if(acc >= mod.target) return toLocalISO(cur);
+            cur=addDays(cur,1);
+        }
+        return null;
+    }
+    function forecastFinish(mod){
+      const fd = getFinishDate(mod);
+      return fd || '—';
+    }
+    function acadYearOf(date){const y=date.getFullYear();const m=date.getMonth();return (m>=8)?y:(y-1);}
+    function distinctGroups(){return Array.from(new Set(state.modules.map(m=>m.group||'').filter(Boolean))).sort();}
+    function modulesFiltered(){const gf=$('#groupFilter').value;const mf=$('#moduleFilter').value;return state.modules.filter(m=>(!gf||m.group===gf)&&(!mf||m.id===mf));}
+
+    function formatTime(slotId) {
+        if(!LESSON_SLOTS[slotId]) return "??";
+        return LESSON_SLOTS[slotId].t.split(' - ')[0];
+    }
+    function getSlotSet(count, start) {
+        let set = new Set();
+        for(let i=0; i<count; i++) set.add(start + i);
+        return set;
+    }
+    function formatRange(start, count) {
+        if(!LESSON_SLOTS[start]) return "??";
+        const end = start + count - 1;
+        const sTime = LESSON_SLOTS[start].t.split(' - ')[0];
+        const eTime = LESSON_SLOTS[end] ? LESSON_SLOTS[end].t.split(' - ')[1] : '...';
+        return `${sTime}–${eTime} (${start}-${end} pam.)`; 
+    }
+
+    function getWeeklyComparison(mondayCurrent) {
+        const mondayPrev = addDays(mondayCurrent, -7);
+        const reportMap = new Map();
+        modulesFiltered().forEach(mod => {
+            const changes = [];
+            const modStart = parseISO(mod.start);
+            const isNewModule = modStart >= mondayCurrent && modStart <= addDays(mondayCurrent, 6);
+            if(isNewModule) changes.push(`<span class="report-start">✨ Startuoja naujas modulis</span>`);
+            
+            const finishStr = getFinishDate(mod);
+            if(finishStr) {
+                const finishDate = parseISO(finishStr);
+                if(finishDate >= mondayCurrent && finishDate <= addDays(mondayCurrent, 6)) {
+                    changes.push(`<span class="report-finish">🏁 Modulio pabaiga (paskutinės valandos)</span>`);
+                }
+            }
+
+            for(let i=0; i<7; i++) {
+                const curDate = addDays(mondayCurrent, i);
+                const prevDate = addDays(mondayPrev, i);
+                const curInfo = getDayInfo(mod, curDate);
+                const prevInfo = getDayInfo(mod, prevDate);
+                const curSet = getSlotSet(curInfo.count, curInfo.start);
+                const prevSet = getSlotSet(prevInfo.count, prevInfo.start);
+                const added = [...curSet].filter(x => !prevSet.has(x)).sort((a,b)=>a-b);
+                const removed = [...prevSet].filter(x => !curSet.has(x)).sort((a,b)=>a-b);
+                
+                if (added.length > 0 || removed.length > 0) {
+                    let msg = `<b>${DAYS_FULL[i]} (${DAYS_SHORT[i]}):</b> `;
+                    if (prevInfo.event === 'sick' && curInfo.count > 0) msg += `<span class="report-good">Grįžtama į grafiką po ligos</span>`;
+                    else if (prevInfo.event === 'vac' && curInfo.count > 0) msg += `<span class="report-good">Grįžtama į grafiką po atostogų</span>`;
+                    else if (curInfo.event === 'sick') msg += `<span class="report-bad">Nėra pamokų (LIGA)</span>`;
+                    else if (curInfo.event === 'vac') msg += `<span class="report-info">Nėra pamokų (ATOSTOGOS)</span>`;
+                    else {
+                        let parts = [];
+                        if (added.length > 0) parts.push(`<span class="report-good">Prisidėjo:</span> ${added.join(', ')} pam.`);
+                        if (removed.length > 0) parts.push(`<span class="report-bad">Nuimtos:</span> ${removed.join(', ')} pam.`);
+                        msg += parts.join('; ');
+                    }
+                    if (!isNewModule) changes.push(msg);
+                }
+            }
+            if(changes.length > 0) reportMap.set(mod.id, changes);
+        });
+        return reportMap;
+    }
+
+    // --- RENDERERS ---
+    
+    function renderInputs(){
+        const c = $('#scheduleInputs');
+        if(!c) return;
+        c.innerHTML = '';
+        const labels = ['Pr','An','Tr','Kt','Pn','Št','Sk'];
+        labels.forEach((l, i) => {
+            const div = document.createElement('div');
+            div.className = "flex items-center gap-2 border-b border-slate-100 pb-1 last:border-0";
+            let options = '';
+            LESSON_SLOTS.forEach(slot => {
+                options += `<option value="${slot.id}">Pam. ${slot.id} (${slot.t.split(' - ')[0]})</option>`;
+            });
+            div.innerHTML = `
+                <span class="w-6 text-[10px] text-slate-400 font-bold">${l}</span>
+                <input class="d${i} w-16 text-center text-xs p-1.5 border-slate-200 rounded focus:ring-navy-900" type="number" min="0" value="0" placeholder="Kiek">
+                <select class="ds${i} flex-1 text-xs p-1.5 border-slate-200 rounded focus:ring-navy-900 text-slate-600 bg-white">
+                    <option value="1" disabled selected>-- Pradžia --</option>
+                    ${options}
+                </select>
+            `;
+            c.appendChild(div);
+        });
+    }
+
+    function renderFilters(){
+      const ysel=$('#acadYearSelect');
+      const startY=parseInt(ysel.value,10)||acadYearOf(new Date());
+      const years=new Set();const today=new Date();
+      years.add(acadYearOf(today)-1);years.add(acadYearOf(today));years.add(acadYearOf(today)+1);
+      state.modules.forEach(m=>{if(m.start) years.add(acadYearOf(parseISO(m.start)));});
+      const sortedY=Array.from(years).sort((a,b)=>a-b);
+      const curY = ysel.value;
+      ysel.innerHTML=sortedY.map(y=>{const sel=(y==curY || (!curY && y===acadYearOf(today)))?'selected':'';return `<option value="${y}" ${sel}>${y}–${y+1}</option>`;}).join('');
+      
+      const gf=$('#groupFilter'); const mf=$('#moduleFilter');
+      const groups=distinctGroups();
+      const curG = gf.value;
+      gf.innerHTML='<option value="">Visos</option>'+groups.map(g=>`<option value="${g}" ${g===curG?'selected':''}>${g}</option>`).join('');
+      
+      const curM = mf.value;
+      const mOpts=state.modules.filter(m=>!gf.value||m.group===gf.value).map(m=>`<option value="${m.id}" ${m.id===curM?'selected':''}>${escapeHTML(m.name)}</option>`).join('');
+      mf.innerHTML='<option value="">Visi</option>'+mOpts;
+      
+      const vg=$('#groupSuggestions');
+      if(vg) vg.innerHTML = groups.map(g=>`<option value="${g}"></option>`).join('');
+      
+      const vGrp=$('#vGroups');
+      if(vGrp) {
+          const selV = Array.from(vGrp.selectedOptions||[]).map(o=>o.value);
+          vGrp.innerHTML=groups.map(g=>`<option value="${g}">${g}</option>`).join('');
+          Array.from(vGrp.options).forEach(o=>{if(selV.includes(o.value)) o.selected=true;});
+      }
+    }
+
+    function renderYear(){
+      const todayEl = $('#todayStr');
+      if(todayEl) todayEl.textContent=todayISO();
+      
+      const startY=parseInt($('#acadYearSelect').value,10);
+      if(!startY) return;
+      const wall=$('#yearWall'); wall.innerHTML='';
+      
+      const events={}; 
+      const gf=$('#groupFilter').value;
+      (state.vacations||[]).forEach(v=>{
+        if(!vacationAppliesToGroup(v, gf)) return;
+        let d=parseISO(v.from), end=parseISO(v.to);
+        const type = v.type || 'vac';
+        for(let i=0;i<999&&d<=end;i++){ events[toLocalISO(d)]=type; d=addDays(d,1); }
+      });
+      
+      for(let i=0; i<12; i++){
+        const mObj = new Date(startY, 8+i, 1);
+        const y=mObj.getFullYear(), m=mObj.getMonth();
+        const first=new Date(y,m,1), last=new Date(y,m+1,0);
+        
+        const card=document.createElement('div');
+        card.className='bg-white rounded-xl shadow-card border border-slate-200/60 p-4 flex flex-col h-full hover:shadow-lg transition-shadow duration-300';
+        card.innerHTML=`<div class="flex justify-between items-center mb-3"><h3 class="font-bold text-navy-900 capitalize">${LT_MONTHS[m]}</h3><span class="text-xs text-slate-400 font-medium">${y}</span></div><div class="grid grid-cols-7 mb-1 text-center">${['Pr','An','Tr','Kt','Pn','Št','Sk'].map((d,idx)=>`<span class="text-[10px] font-bold text-slate-400 uppercase ${idx>4?'text-slate-300':''}">${d}</span>`).join('')}</div>`;
+        const grid=document.createElement('div');
+        grid.className='grid grid-cols-7 gap-y-1 text-center text-sm text-slate-600 flex-1 content-start';
+        
+        const pad = (first.getDay()+6)%7;
+        for(let k=0;k<pad;k++) grid.innerHTML+=`<div class="h-8"></div>`;
+        
+        for(let d=1; d<=last.getDate(); d++){
+          const dateObj=new Date(y,m,d);
+          const dStr=toLocalISO(dateObj);
+          const isT=dStr===todayISO();
+          const evtType=events[dStr];
+          const dayOfW = (dateObj.getDay()+6)%7;
+          const isW = dayOfW > 4; 
+          
+          let classes = `cell ${isT?'today':''} ${isW&&!isT&&!evtType?'weekend':''}`;
+          if(evtType === 'vac') classes += ' vac';
+          if(evtType === 'sick') classes += ' sick';
+          
+          if(state.sem2Start && dStr === state.sem2Start) classes += ' sem-start';
+
+          const cell=document.createElement('div');
+          cell.className=classes;
+          if(isT) cell.id = 'currentDayMarker'; 
+          cell.innerHTML=d;
+          
+          const mods = modulesFiltered().filter(mod=>planForDate(mod,dateObj)>0);
+          if(mods.length && !evtType){
+             const container=document.createElement('div');
+             container.className='markers-col';
+             mods.forEach(mod => {
+                 const bar=document.createElement('div');
+                 bar.className='marker-bar';
+                 bar.style.backgroundColor = mod.color || '#0f172a';
+                 bar.title = mod.name;
+                 container.appendChild(bar);
+             });
+             cell.appendChild(container);
+          }
+          cell.onclick=()=>openDayDialog(dStr);
+          grid.appendChild(cell);
+        }
+        card.appendChild(grid);
+        wall.appendChild(card);
+      }
+    }
+
+    function renderSidebar(){
+      const list=$('#miniList'); 
+      if(!list) return;
+      list.innerHTML='';
+      modulesFiltered().forEach(m=>{
+        const done = plannedByCapped(m, yesterdayISO());
+        const left = Math.max(0, m.target - done);
+        const finish = forecastFinish(m);
+        const modColor = m.color || '#0f172a';
+        
+        const div=document.createElement('div');
+        div.className='bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all group';
+        div.style.borderLeft = `4px solid ${modColor}`;
+        div.innerHTML=`<div class="flex justify-between items-start mb-2"><div><h4 class="text-sm font-bold text-navy-900 leading-tight">${escapeHTML(m.name)}</h4><span class="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded mt-1 inline-block font-medium">${escapeHTML(m.group)}</span></div><button class="text-slate-300 hover:text-red-500 transition-colors p-1" data-act="delMod" data-mid="${m.id}"><span class="material-symbols-outlined text-lg">delete</span></button></div>
+          <div class="text-xs text-slate-500 space-y-1.5"><div class="flex justify-between"><span>Tikslas:</span> <span class="font-bold text-navy-900">${m.target}</span></div><div class="flex justify-between"><span>Pravesta:</span> <span class="font-bold text-navy-900">${done}</span></div><div class="flex justify-between"><span>Liko:</span> <span class="font-bold text-navy-900">${left}</span></div><div class="flex justify-between"><span>Prognozė:</span> <span class="font-bold text-emerald-600">${finish}</span></div></div>
+          <div class="mt-3 pt-2 border-t border-slate-100"><button class="text-xs font-semibold text-navy-900 hover:text-blue-600 flex items-center gap-1 w-full justify-center transition-colors" data-act="addOv" data-mid="${m.id}"><span class="material-symbols-outlined text-sm">edit_calendar</span> Keisti grafiką</button></div>`;
+        list.appendChild(div);
+      });
+      list.onclick=(e)=>{
+        const btn=e.target.closest('button'); if(!btn)return;
+        const act=btn.dataset.act, mid=btn.dataset.mid;
+        if(act==='delMod'){ if(confirm('Trinti?')){ state.modules=state.modules.filter(x=>x.id!==mid); save(); renderAll(); } }
+        if(act==='addOv'){ openOverrideDialog(mid); }
+      };
+    }
+
+    function renderVacations(){
+      const box=$('#vacList'); 
+      if(!box) return;
+      box.innerHTML='';
+      if(!state.vacations.length) { box.innerHTML = '<span class="text-xs text-slate-400 italic">Nėra pridėtų atostogų.</span>'; return; }
+      state.vacations.slice().sort((a,b)=>a.from.localeCompare(b.from)).forEach((v,i)=>{
+         const grp = (!v.groups||!v.groups.length)?'Visos':v.groups.join(', ');
+         const typeLabel = (v.type === 'sick') ? '<span class="text-red-500 font-bold">LIGA</span>' : 'Atostogos';
+         const tag=document.createElement('span');
+         tag.className='inline-flex items-center text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded border border-slate-200';
+         tag.innerHTML=`${typeLabel} <b>${v.from}</b><span class="text-slate-400 mx-1">➜</span><b>${v.to}</b> <span class="text-slate-400 ml-1">(${grp})</span> <button class="ml-2 text-slate-400 hover:text-red-500 font-bold" onclick="delVac(${i})">×</button>`;
+         box.appendChild(tag);
+      });
+    }
+
+    // --- ACTIONS ---
+    function addModule(){
+      const name=$('#mName').value.trim(); const group=$('#mGroup').value.trim(); const target=parseInt($('#mTarget').value,10); const start=$('#mStart').value; const color=$('#mColor').value;
+      const sched=[]; const schedStarts=[];
+      for(let i=0;i<7;i++) { sched[i]=parseInt($(`.d${i}`).value,10)||0; schedStarts[i]=parseInt($(`.ds${i}`).value,10)||1; }
+      if(!name || !group || !target || !start) return alert('Užpildykite visus laukus');
+      state.modules.push({ id: 'm'+Date.now(), name, group, target, start, color, sched, schedStarts, overrides:[] });
+      save(); $('#mName').value=''; $('#mTarget').value=''; for(let i=0;i<7;i++) { $(`.d${i}`).value=0; $(`.ds${i}`).value=1; }
+      renderAll();
+    }
+    function addVac(){
+      const from=$('#vFrom').value, to=$('#vTo').value; if(!from||!to) return alert('Nurodykite datas');
+      const all=$('#vAll').checked; const grps=all?[]:Array.from($('#vGroups').selectedOptions).map(o=>o.value); const type=$('#vType').value;
+      state.vacations.push({from, to, groups:grps, type}); save();
+      $('#vFrom').value=''; $('#vTo').value=''; $('#vAll').checked=false; renderAll();
+    }
+    function addSickThisWeek(){
+        const today = new Date(); const day = today.getDay(); const diff = today.getDate() - day + (day == 0 ? -6:1); 
+        const monday = new Date(today.setDate(diff)); const sunday = new Date(today.setDate(diff+6));
+        if(confirm(`Ar tikrai žymėti ligą šiai savaitei?`)){
+            state.vacations.push({from: toLocalISO(monday), to: toLocalISO(sunday), groups:[], type:'sick'}); save(); renderAll();
+        }
+    }
+    function importLithuanianHolidays() {
+      const year = parseInt($('#acadYearSelect').value) || new Date().getFullYear();
+      const dates = [`${year}-11-01`, `${year}-12-24`, `${year}-12-25`, `${year}-12-26`, `${year+1}-01-01`, `${year+1}-02-16`, `${year+1}-03-11`, `${year+1}-05-01`, `${year+1}-06-24`, `${year+1}-07-06`];
+      let cnt=0; dates.forEach(d=>{ if(!state.vacations.find(v=>v.from===d && v.to===d)){ state.vacations.push({from:d, to:d, groups:[], type:'vac'}); cnt++; } });
+      save(); renderAll(); alert(`Pridėta ${cnt} šventinių dienų.`);
+    }
+    function importScheduleFromImage() {
+        if(!confirm('Įkelti 2025-2026 grafiką?')) return;
+        const schedule = [ {from: '2025-11-03', to: '2025-11-09', groups: [], type:'vac'}, {from: '2025-12-24', to: '2026-01-04', groups: [], type:'vac'}, {from: '2026-02-16', to: '2026-02-22', groups: [], type:'vac'}, {from: '2025-07-01', to: '2025-08-31', groups: [], type:'vac'}, {from: '2026-03-30', to: '2026-04-05', groups: [], type:'vac'}, {from: '2026-04-06', to: '2026-04-12', groups: [], type:'vac'} ];
+        schedule.forEach(item => { if(!state.vacations.find(v=>v.from===item.from)) state.vacations.push(item); });
+        save(); renderAll(); alert(`Įkelta!`);
+    }
+    window.delVac=(i)=>{ state.vacations.splice(i,1); save(); renderAll(); };
+
+    // --- DIALOGS ---
+    function openDayDialog(dateISO){
+      const tpl=$('#dayDialogTpl').content.cloneNode(true);
+      const ov=tpl.querySelector('.overlay');
+      ov.querySelector('.date').textContent=dateISO;
+      const tbody=ov.querySelector('tbody');
+      let sd=0, sc=0, sl=0;
+      modulesFiltered().forEach(m=>{
+        const pd=planForDate(m, parseISO(dateISO));
+        const pc=plannedByCapped(m, dateISO);
+        const pl=Math.max(0, m.target-pc);
+        sd+=pd; sc+=pc; sl+=pl;
+        
+        const mCol = m.color || '#0f172a';
+        const tr=document.createElement('tr');
+        tr.className='border-b border-slate-50 last:border-0';
+        tr.innerHTML=`<td class="py-2 pl-2"><span class="inline-block w-2 h-2 rounded-full mr-2" style="background:${mCol}"></span>${escapeHTML(m.name)} <span class="text-[10px] text-slate-400">(${m.group})</span></td><td class="text-center font-bold text-navy-900">${pd}</td><td class="text-center text-slate-400">${pc}</td><td class="text-center text-slate-400">${pl}</td>`;
+        tbody.appendChild(tr);
+      });
+      ov.querySelector('.sumDay').textContent=sd;
+      ov.querySelector('.sumCum').textContent=sc;
+      ov.querySelector('.sumLeft').textContent=sl;
+      ov.querySelector('.close').onclick=()=>ov.remove();
+      document.body.appendChild(ov);
+    }
+    
+    function openOverrideDialog(mid){
+       const m=state.modules.find(x=>x.id===mid); if(!m)return;
+       const tpl=$('#overrideDialogTpl').content.cloneNode(true);
+       const ov=tpl.querySelector('.overlay');
+       const container=ov.querySelector('#ovInputsContainer');
+       
+       const refreshInputs = (dateStr) => {
+           const existing = m.overrides ? m.overrides.find(o => o.from === dateStr) : null;
+           const useSched = existing ? existing.sched : m.sched;
+           const useStarts = existing ? existing.schedStarts : (m.schedStarts || [1,1,1,1,1,1,1]);
+           
+           container.innerHTML = '';
+           ['Pr','An','Tr','Kt','Pn','Št','Sk'].forEach((l, i) => {
+                const div = document.createElement('div'); div.className = "flex items-center gap-2 border-b border-slate-100 pb-1 last:border-0";
+                let options = ''; 
+                const currentStart = (useStarts[i] !== undefined) ? useStarts[i] : 1;
+                LESSON_SLOTS.forEach(s => { 
+                    const sel = (s.id === currentStart) ? 'selected' : '';
+                    options += `<option value="${s.id}" ${sel}>Pam. ${s.id} (${s.t.split(' - ')[0]})</option>`; 
+                });
+                const currentCount = (useSched[i] !== undefined) ? useSched[i] : 0;
+                
+                div.innerHTML = `<span class="w-6 text-[10px] text-slate-400 font-bold">${l}</span><input class="ovd${i} w-16 text-center text-xs p-1.5 border-slate-200 rounded focus:ring-navy-900" type="number" min="0" value="${currentCount}"><select class="ovs${i} flex-1 text-xs p-1.5 border-slate-200 rounded focus:ring-navy-900 text-slate-600 bg-white"><option value="1" disabled>-- Pradžia --</option>${options}</select>`;
+                container.appendChild(div);
+           });
+       };
+
+       flatpickr(ov.querySelector('#ovFrom'), { 
+           locale: 'lt', dateFormat: 'Y-m-d',
+           onChange: (s, dStr) => refreshInputs(dStr)
+       });
+       
+       refreshInputs(''); 
+
+       ov.querySelector('.save').onclick=()=>{
+         const from=$('#ovFrom',ov).value; if(!from) return alert('Data?');
+         const sched=[], schedStarts=[]; 
+         for(let i=0;i<7;i++) { 
+             sched[i]=parseInt($(`.ovd${i}`,ov).value,10)||0; 
+             schedStarts[i]=parseInt($(`.ovs${i}`,ov).value,10)||1; 
+         }
+         
+         if(!m.overrides) m.overrides=[];
+         m.overrides = m.overrides.filter(o => o.from !== from);
+         m.overrides.push({from, sched, schedStarts});
+         save(); renderAll(); ov.remove();
+       };
+       ov.querySelector('.cancel').onclick=()=>ov.remove(); document.body.appendChild(ov);
+    }
+
+    // --- GRID WEEKLY ---
+    function openWeeklyDialog() {
+        const tpl = $('#weeklyDialogTpl').content.cloneNode(true);
+        const ov = tpl.querySelector('.overlay');
+        const container = ov.querySelector('#gridContainer');
+        const picker = ov.querySelector('#weekPicker');
+        const reportContainer = ov.querySelector('#weekReportContainer');
+        const reportContent = ov.querySelector('#weekReportContent');
+
+        const updateReport = (dateStr) => {
+            container.innerHTML = ''; if(!dateStr) return;
+            const refDate = parseISO(dateStr);
+            const day = refDate.getDay(); const diff = refDate.getDate() - day + (day == 0 ? -6:1); 
+            const monday = new Date(refDate.setDate(diff)); const sunday = new Date(refDate.setDate(diff+6)); const sundayISO = toLocalISO(sunday);
+
+            const grid = document.createElement('div'); grid.className = 'schedule-grid';
+            grid.appendChild(createGridCell('sg-header', ''));
+            LESSON_SLOTS.forEach(slot => { grid.appendChild(createGridCell('sg-header', `<div>${slot.id}</div><div style="font-weight:400;font-size:9px">${slot.t.split(' - ')[0]}</div>`)); });
+
+            // REPORT LOGIC
+            const reportMap = getWeeklyComparison(monday);
+
+            for(let i=0; i<7; i++) {
+                const cur = addDays(monday, i);
+                const dIso = toLocalISO(cur);
+                const dName = document.createElement('div'); dName.className = 'sg-day';
+                dName.innerHTML = `<div><div style="font-size:16px">${DAYS_SHORT[i]}</div><div style="font-size:9px;color:#64748b;font-weight:400">${dIso.slice(5)}</div></div>`;
+                grid.appendChild(dName);
+
+                const rowContent = document.createElement('div'); rowContent.className = 'sg-row-content';
+                const guides = document.createElement('div'); guides.className = 'grid-lines';
+                for(let k=0; k<13; k++) guides.appendChild(document.createElement('div')).className = 'grid-line';
+                rowContent.appendChild(guides);
+
+                const dayItems = [];
+                // Check Global Vacation
+                const evtType = getGroupEventType(cur, null); 
+
+                if (!evtType) {
+                    modulesFiltered().forEach(m => {
+                        const evt = getGroupEventType(cur, m.group);
+                        if (evt) return;
+
+                        // 1. GHOSTS (REMOVED)
+                        const prevDate = addDays(cur, -7);
+                        const prevInfo = getDayInfo(m, prevDate);
+                        const curInfo = getDayInfo(m, cur);
+                        const curSet = getSlotSet(curInfo.count, curInfo.start);
+                        const prevSet = getSlotSet(prevInfo.count, prevInfo.start);
+                        
+                        const removed = [...prevSet].filter(x => !curSet.has(x));
+                        removed.forEach(slotId => {
+                            const ghost = document.createElement('div');
+                            ghost.className = 'mod-block diff-removed';
+                            ghost.style.left = `calc(${(slotId / 13) * 100}% + 1px)`;
+                            ghost.style.width = `calc(${(1 / 13) * 100}% - 1px)`;
+                            ghost.style.top = '2px'; ghost.style.height = 'calc(100% - 4px)';
+                            ghost.innerHTML = `<span class="t" style="text-decoration:line-through">${escapeHTML(m.name)}</span>`;
+                            rowContent.appendChild(ghost);
+                        });
+
+                        // 2. ACTIVE BLOCKS
+                        if (curInfo.count > 0) {
+                            const done = plannedByCapped(m, yesterdayISO()); const left = Math.max(0, m.target - done);
+                            const doneStr = `Pr:${done}/Lik:${left}`;
+                            
+                            // 2a. UNIFIED BLOCK (For Text & Background)
+                            const mainBlock = document.createElement('div');
+                            mainBlock.className = 'mod-block';
+                            if (isOverridden(m, cur)) mainBlock.classList.add('is-override');
+                            mainBlock.style.backgroundColor = m.color || '#0f172a';
+                            mainBlock.style.left = `calc(${(curInfo.start / 13) * 100}% + 2px)`;
+                            mainBlock.style.width = `calc(${((curInfo.count) / 13) * 100}% - 3px)`;
+                            mainBlock.style.top = '2px'; mainBlock.style.height = 'calc(100% - 4px)';
+                            
+                            // TEXT CONTENT IS NOW IN A WRAPPER WITH HIGH Z-INDEX
+                            const textDiv = document.createElement('div');
+                            textDiv.className = 'mod-content';
+                            textDiv.innerHTML = `<span class="t">${escapeHTML(m.name)}</span><span class="g">${escapeHTML(m.group)}</span><span class="s">${doneStr}</span>`;
+                            mainBlock.appendChild(textDiv);
+                            
+                            rowContent.appendChild(mainBlock);
+
+                            // 2b. OVERLAYS FOR ADDED SLOTS (Dashed border ON TOP of the main block)
+                            const added = [...curSet].filter(x => !prevSet.has(x));
+                            added.forEach(slotId => {
+                                const overlay = document.createElement('div');
+                                overlay.className = 'diff-overlay diff-added';
+                                overlay.style.left = `calc(${(slotId / 13) * 100}% + 1px)`;
+                                overlay.style.width = `calc(${(1 / 13) * 100}% - 1px)`;
+                                rowContent.appendChild(overlay);
+                            });
+                        }
+                    });
+                } else {
+                    const block = document.createElement('div');
+                    block.className = 'mod-block';
+                    block.style.left = '0'; block.style.width = '100%'; block.style.height = '100%';
+                    block.style.backgroundColor = (evtType === 'sick') ? '#fee2e2' : '#e2e8f0'; 
+                    block.style.color = (evtType === 'sick') ? '#ef4444' : '#94a3b8';
+                    block.style.border = (evtType === 'sick') ? '1px solid #fca5a5' : 'none';
+                    block.innerHTML = `<span style="font-weight:bold;letter-spacing:1px">${evtType==='sick'?'LIGA':'ATOSTOGOS'}</span>`;
+                    rowContent.appendChild(block);
+                }
+                grid.appendChild(rowContent);
+            }
+            container.appendChild(grid);
+            
+            if(reportMap.size > 0) {
+                reportContainer.classList.remove('hidden');
+                let html = '';
+                reportMap.forEach((msgs, modId) => {
+                    const mod = state.modules.find(m => m.id === modId);
+                    if(mod) {
+                        html += `<div class="report-mod-title">${escapeHTML(mod.name)} (${escapeHTML(mod.group)}):</div>`;
+                        msgs.forEach(msg => html += `<div class="report-item">${msg}</div>`);
+                    }
+                });
+                reportContent.innerHTML = html;
+            } else {
+                reportContainer.classList.add('hidden');
+            }
+        };
+        function createGridCell(cls, html) { const d = document.createElement('div'); d.className = cls; d.innerHTML = html; return d; }
+        const fp = flatpickr(picker, { locale: 'lt', dateFormat: 'Y-m-d', defaultDate: 'today', onChange: (s, dStr) => updateReport(dStr) });
+        updateReport(todayISO());
+        ov.querySelector('.close').onclick = () => ov.remove(); document.body.appendChild(ov);
+    }
+
+    function exportJSON(){ const b=new Blob([JSON.stringify(state)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='kalendorius.json'; a.click(); }
+    function importJSON(e){ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=(ev)=>{try{state=JSON.parse(ev.target.result);save();renderAll();alert('Įkelta!');}catch(x){alert('Klaida');}}; r.readAsText(f); }
+    function renderAll(){ renderFilters(); renderInputs(); renderYear(); renderSidebar(); renderVacations(); }
+    
+    // SAFE INIT
+    document.addEventListener('DOMContentLoaded', ()=>{
+      const elAddMod = $('#addMod'); if(elAddMod) elAddMod.onclick=addModule;
+      const elAddVac = $('#addVac'); if(elAddVac) elAddVac.onclick=addVac;
+      const elSick = $('#btnSickThisWeek'); if(elSick) elSick.onclick=addSickThisWeek;
+      
+      const elVAll = $('#vAll');
+      if(elVAll) elVAll.onchange=(e)=> { const t = $('#vGroups'); if(t) t.disabled=e.target.checked; };
+      
+      const elAH = $('#btnAutoHolidays'); if(elAH) elAH.onclick=importLithuanianHolidays;
+      const elAI = $('#btnAutoImage'); if(elAI) elAI.onclick=importScheduleFromImage;
+
+      const elGF = $('#groupFilter'); if(elGF) elGF.onchange=renderAll;
+      const elMF = $('#moduleFilter'); if(elMF) elMF.onchange=renderAll;
+      const elAY = $('#acadYearSelect'); if(elAY) elAY.onchange=renderAll;
+      
+      const elSem = $('#sem2Start');
+      if(elSem) {
+          flatpickr("#sem2Start", { 
+              locale: "lt", dateFormat: "Y-m-d", defaultDate: state.sem2Start,
+              onChange: (selected, dateStr) => { state.sem2Start = dateStr; save(); renderYear(); }
+          });
+      }
+
+      const elExp = $('#btnExport'); if(elExp) elExp.onclick=exportJSON;
+      const elImp = $('#fileImport'); if(elImp) elImp.onchange=importJSON;
+      
+      const elToday = $('#btnToday');
+      if(elToday) elToday.onclick = () => { const el = document.getElementById('currentDayMarker'); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); };
+
+      const elWeekly = $('#btnWeekly'); if(elWeekly) elWeekly.onclick = openWeeklyDialog;
+      
+      flatpickr("#mStart", { locale: "lt", dateFormat: "Y-m-d", defaultDate: "today" });
+      flatpickr("#vFrom", { locale: "lt", dateFormat: "Y-m-d" });
+      flatpickr("#vTo", { locale: "lt", dateFormat: "Y-m-d" });
+      
+      renderAll();
+    });
+  </script>
+</body>
+</html>
