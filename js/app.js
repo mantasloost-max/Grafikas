@@ -389,36 +389,7 @@ function isOverridden(mod, dateObj) {
     return false;
 }
 
-// --- CONFLICT DETECTION ---
-function hasConflict(dateObj) {
-    // Collect all active modules for this day
-    const active = modulesFiltered().filter(mod => planForDate(mod, dateObj) > 0);
-    if (active.length < 2) return false;
 
-    // Group by group name
-    const byGroup = {};
-    for (const m of active) {
-        if (!byGroup[m.group]) byGroup[m.group] = [];
-        byGroup[m.group].push(m);
-    }
-
-    // Check overlaps within each group
-    for (const groupName in byGroup) {
-        const mods = byGroup[groupName];
-        if (mods.length < 2) continue;
-
-        const occupied = new Set();
-        for (const m of mods) {
-            const info = getDayInfo(m, dateObj);
-            for (let i = 0; i < info.count; i++) {
-                const slot = info.start + i;
-                if (occupied.has(slot)) return true; // Conflict found!
-                occupied.add(slot);
-            }
-        }
-    }
-    return false;
-}
 
 function dayPlanRaw(mod, dateObj) {
     if (parseISO(mod.start) > dateObj) return 0;
@@ -712,18 +683,8 @@ function renderYear(targetId = 'yearWall') {
             if (evtType === 'vac') classes += ' vac';
             if (evtType === 'sick') classes += ' sick';
 
-            // Conflict Check
-            if (!evtType && !isW) {
-                if (hasConflict(dateObj)) classes += ' conflict';
-            }
-
             if (state.sem2Start && dStr === state.sem2Start) classes += ' sem-start';
             if (state.semEnd && dStr === state.semEnd) classes += ' sem-end';
-
-            const cell = document.createElement('div');
-            cell.className = classes;
-            if (isT) cell.id = 'currentDayMarker';
-            cell.innerHTML = d;
 
             // USE PRE-CALCULATED PLAN
             const mods = (modPlans.get(dStr) || []);
@@ -733,6 +694,35 @@ function renderYear(targetId = 'yearWall') {
             if (mods.length > 0 && evtType === 'vac') {
                 classes = classes.replace(' vac', ''); // Remove vacation styling if lessons exist
             }
+
+            // Conflict Check Using Pre-Calculated Data (Massive performance boost)
+            if (!evtType && !isW && mods.length > 1) {
+                const byGroup = {};
+                for (const m of mods) {
+                    if (!byGroup[m.group]) byGroup[m.group] = [];
+                    byGroup[m.group].push(m);
+                }
+                let hasConflict = false;
+                for (const g in byGroup) {
+                    if (byGroup[g].length > 1) {
+                        const occupied = new Set();
+                        for (const m of byGroup[g]) {
+                            const info = getDayInfo(m, dateObj);
+                            for (let j = 0; j < info.count; j++) {
+                                const slot = info.start + j;
+                                if (occupied.has(slot)) hasConflict = true;
+                                occupied.add(slot);
+                            }
+                        }
+                    }
+                }
+                if (hasConflict) classes += ' conflict';
+            }
+
+            const cell = document.createElement('div');
+            cell.className = classes;
+            if (isT) cell.id = 'currentDayMarker';
+            cell.innerHTML = d;
 
             if (mods.length) {
                 const container = document.createElement('div');
