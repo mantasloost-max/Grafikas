@@ -11,13 +11,60 @@ const LESSON_SLOTS = [
     { id: 9, t: "15:55 - 16:40" }, { id: 10, t: "16:50 - 17:35" }, { id: 11, t: "17:45 - 18:30" }, { id: 12, t: "18:40 - 19:25" }
 ];
 
-let state = load() || { modules: [], vacations: [], sem2Start: '', semEnd: '' };
-if (!state.vacations) state.vacations = [];
-if (!state.modules) state.modules = [];
+// JSONBin.io konfigūracija
+const JSONBIN_BIN_ID = 'JŪSŲ_BIN_ID'; // ĮRAŠYKITE SAVO BIN_ID ČIA! Pvz.: '65e...123'
+const JSONBIN_API_KEY = 'JŪSŲ_API_KEY'; // ĮRAŠYKITE SAVO API_KEY ČIA! Pvz.: '$2a$10$abc...'
+const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
+
+let state = { modules: [], vacations: [], sem2Start: '', semEnd: '' };
+
+function isJsonBinConfigured() {
+    return JSONBIN_BIN_ID !== 'JŪSŲ_BIN_ID' && JSONBIN_API_KEY !== 'JŪSŲ_API_KEY';
+}
+
+async function loadFromCloud() {
+    const local = localStorage.getItem(storageKey);
+    if (!isJsonBinConfigured()) {
+        if (local) state = JSON.parse(local);
+        return;
+    }
+    try {
+        const res = await fetch(JSONBIN_URL, { headers: { 'X-Master-Key': JSONBIN_API_KEY } });
+        const data = await res.json();
+        if (data && data.record) {
+            state = data.record;
+            localStorage.setItem(storageKey, JSON.stringify(state)); // local backup
+        }
+    } catch(e) {
+        console.error("Cloud load error, falling back to local:", e);
+        if (local) state = JSON.parse(local);
+    }
+}
+
+async function saveToCloud() {
+    localStorage.setItem(storageKey, JSON.stringify(state)); // local instant save
+    if (!isJsonBinConfigured()) return;
+    try {
+        await fetch(JSONBIN_URL, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY },
+            body: JSON.stringify(state)
+        });
+        console.log("Sėkmingai išsaugota debesyje (JSONBin)!");
+    } catch(e) {
+        console.error("Cloud save error:", e);
+    }
+}
 
 
 // ... (in DOMContentLoaded event)
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Užkrauname iš debesies prieš piešdami UI
+    await loadFromCloud();
+
+    if (!state.vacations) state.vacations = [];
+    if (!state.modules) state.modules = [];
+
     // ... existing initialization ...
     renderFilters();
     renderInputs();
@@ -97,8 +144,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-function save() { localStorage.setItem(storageKey, JSON.stringify(state)); }
-function load() { try { return JSON.parse(localStorage.getItem(storageKey)); } catch (e) { return null; } }
+function save() { saveToCloud(); }
+function load() { /* loadFromCloud handles this */ }
 
 function toLocalISO(d) { const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0'); return `${y}-${m}-${day}`; }
 function todayISO() { const d = new Date(); d.setHours(0, 0, 0, 0); return toLocalISO(d); }
