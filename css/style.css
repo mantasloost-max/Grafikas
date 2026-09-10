@@ -1093,3 +1093,23 @@ th.y-col-fixed {
 .weekly-dialog .weekly-insights { background: #fff; }
 .weekly-dialog .weekly-insights summary { color: #64748b; font-weight: 500; font-size: 11px; }
 @media (max-width: 1100px) { .lesson-range { display: none; } .weekly-dialog .elite-block { padding: 5px; } }
+
+.annual-edit-cell { padding: 0 !important; }
+.annual-edit-cell > button { width: 100%; min-height: 30px; height: 100%; cursor: pointer; background: transparent; border: 0; font: inherit; color: inherit; }
+.annual-edit-cell > button:hover, .annual-edit-cell > button:focus-visible { background: #c7d2fe80; outline: 2px solid #6366f1; outline-offset: -2px; }
+.annual-edit-cell.y-cell-empty > button { color: #94a3b8; }
+.has-week-edit { box-shadow: inset 0 2px #6366f1; }
+.annual-edit-overlay { position: fixed; inset: 0; z-index: 200; background: #0f172a80; display: grid; place-items: center; padding: 16px; }
+.annual-edit-dialog { background: white; border-radius: 14px; width: min(520px, 100%); max-height: 92vh; overflow: auto; padding: 24px; box-shadow: 0 20px 60px #0f172a33; }
+.annual-edit-dialog h3 { font-size: 18px; font-weight: 700; margin: 0 0 8px; }
+.annual-edit-dialog p { font-size: 12px; margin: 6px 0; }
+.annual-edit-note { color: #64748b; }
+.annual-edit-day { display: grid; grid-template-columns: 1fr 65px 140px; align-items: center; gap: 10px; padding: 6px 0; font-size: 12px; }
+.annual-edit-day small { color: #64748b; display: block; }
+.annual-edit-day input, .annual-edit-day select { width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px; font-size: 12px; }
+.annual-edit-error { color: #b91c1c; }
+.annual-edit-total { font-weight: 700; }
+.annual-edit-dialog footer { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 16px; }
+.annual-edit-dialog button { padding: 8px 12px; border-radius: 6px; background: #f1f5f9; font-size: 12px; cursor: pointer; }
+.annual-edit-dialog button.save { background: #4f46e5; color: white; }
+.annual-edit-dialog button:disabled { opacity: .4; cursor: default; }

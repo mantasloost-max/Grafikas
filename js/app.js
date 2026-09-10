@@ -315,6 +315,8 @@ function renderVacationsList() {
 function inVacationForGroup(dateObj, group) { return getGroupEventType(dateObj, group) !== null; }
 
 function getEffectiveSchedule(mod, dateObj) {
+    const edit = getWeekEdit(mod, dateObj);
+    if (edit) return edit.sched;
     const ovs = (mod.overrides || []).slice().filter(x => x.from).sort((a, b) => parseISO(a.from) - parseISO(b.from));
     let sched = mod.sched || [0, 0, 0, 0, 0, 0, 0];
     const tStr = toLocalISO(dateObj); // Compare Strings YYYY-MM-DD
@@ -324,6 +326,8 @@ function getEffectiveSchedule(mod, dateObj) {
     return sched;
 }
 function getEffectiveStartSlot(mod, dateObj) {
+    const edit = getWeekEdit(mod, dateObj);
+    if (edit) return edit.schedStarts[dayIndex(dateObj)] || 1;
     const tStr = toLocalISO(dateObj); // Compare Strings YYYY-MM-DD
     const ovs = (mod.overrides || []).slice().filter(x => x.from).sort((a, b) => parseISO(a.from) - parseISO(b.from));
     let starts = mod.schedStarts || [1, 1, 1, 1, 1, 1, 1];
@@ -383,7 +387,7 @@ function isAttendanceWeek(mod, dateObj) {
 }
 
 function getDayInfo(mod, dateObj) {
-    if (!isAttendanceWeek(mod, dateObj)) return { count: 0, start: 1, event: null };
+    if (!getWeekEdit(mod, dateObj) && !isAttendanceWeek(mod, dateObj)) return { count: 0, start: 1, event: null };
     const evtType = getGroupEventType(dateObj, mod.group);
     if (evtType) return { count: 0, start: 1, event: evtType };
     const idx = dayIndex(dateObj);
@@ -393,6 +397,7 @@ function getDayInfo(mod, dateObj) {
 }
 
 function isOverridden(mod, dateObj) {
+    if (getWeekEdit(mod, dateObj)) return true;
     const t = dateObj.getTime();
     const ovs = (mod.overrides || []).slice().filter(x => x.from).sort((a, b) => parseISO(a.from) - parseISO(b.from));
     for (const ov of ovs) { if (parseISO(ov.from).getTime() <= t) return true; }
@@ -1389,6 +1394,67 @@ function openEditModuleDialog(mid) {
 
 
 
+function getWeekEdit(mod, date) {
+    return (mod.weekEdits || {})[toLocalISO(getMonday(date))];
+}
+
+function openAnnualWeekEditor(mod, weekStart, onSaved) {
+    const monday = parseISO(weekStart);
+    const existing = getWeekEdit(mod, monday);
+    const overlay = document.createElement('div');
+    overlay.className = 'annual-edit-overlay';
+    overlay.innerHTML = `<section class="annual-edit-dialog" role="dialog" aria-modal="true" aria-label="Keisti savaitės planą">
+        <h3>Keisti savaitės planą</h3>
+        <p>${escapeHTML(mod.name)} · ${escapeHTML(mod.group)}</p>
+        <p><b>${weekStart} – ${toLocalISO(addDays(monday, 4))}</b></p>
+        <p class="annual-edit-note">Pakeitimai galios tik šiai savaitei, taip pat ir nelankomai kas antrai savaitei. Atostogos, modulio pradžia ir bendras valandų tikslas lieka galioti.</p>
+        <div class="annual-edit-days"></div>
+        <p class="annual-edit-total"></p><p class="annual-edit-error" role="alert"></p>
+        <footer><button type="button" class="reset">Atkurti įprastą planą</button><button type="button" class="cancel">Atšaukti</button><button type="button" class="save">Išsaugoti</button></footer>
+    </section>`;
+    const inputs = [];
+    for (let i = 0; i < 7; i++) {
+        const date = addDays(monday, i);
+        const info = getDayInfo(mod, date);
+        const count = existing ? existing.sched[i] : planForDate(mod, date);
+        const start = existing ? existing.schedStarts[i] : info.start;
+        const row = document.createElement('label');
+        row.className = 'annual-edit-day';
+        const blocked = getGroupEventType(date, mod.group) || date < parseISO(mod.start);
+        row.innerHTML = `<span>${DAYS_SHORT[i]} <small>${toLocalISO(date).slice(5)}${blocked ? ' · nevyksta' : ''}</small></span><input aria-label="${DAYS_SHORT[i]} pamokų skaičius" type="number" min="0" max="12" step="1" value="${count || 0}"><select aria-label="${DAYS_SHORT[i]} pradžia">${LESSON_SLOTS.map(s => `<option value="${s.id}" ${s.id === start ? 'selected' : ''}>${s.id} pam. · ${s.t.split(' - ')[0]}</option>`).join('')}</select>`;
+        overlay.querySelector('.annual-edit-days').appendChild(row);
+        inputs.push({count: row.querySelector('input'), start: row.querySelector('select')});
+    }
+    const total = () => overlay.querySelector('.annual-edit-total').textContent = `Savaitės planas: ${inputs.reduce((n, x) => n + (Number(x.count.value) || 0), 0)} pam.`;
+    inputs.forEach(x => x.count.addEventListener('input', total)); total();
+    const oldFocus = document.activeElement;
+    const close = () => { overlay.remove(); oldFocus?.focus(); };
+    overlay.querySelector('.cancel').onclick = close;
+    const finish = () => { save(); renderAll(); close(); onSaved(); };
+    overlay.querySelector('.save').onclick = () => {
+        const sched = inputs.map(x => Number(x.count.value));
+        const schedStarts = inputs.map(x => Number(x.start.value));
+        if (sched.some((n, i) => !Number.isInteger(n) || n < 0 || n > 13 - schedStarts[i])) {
+            overlay.querySelector('.annual-edit-error').textContent = 'Įveskite sveiką pamokų skaičių. Paskutinė pamoka negali būti vėlesnė nei 12.'; return;
+        }
+        if (!mod.weekEdits) mod.weekEdits = {};
+        mod.weekEdits[weekStart] = {sched, schedStarts};
+        finish();
+    };
+    overlay.querySelector('.reset').disabled = !existing;
+    overlay.querySelector('.reset').onclick = () => { delete mod.weekEdits[weekStart]; finish(); };
+    overlay.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { e.stopPropagation(); close(); }
+        if (e.key === 'Tab') {
+            const controls = [...overlay.querySelectorAll('button:not(:disabled), input, select')];
+            const first = controls[0], last = controls[controls.length - 1];
+            if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+            if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
+    });
+    document.body.appendChild(overlay); inputs[0].count.focus();
+}
+
 function openYearlyGridDialog() {
     const tpl = $('#yearlyGridDialogTpl').content.cloneNode(true);
     const ov = tpl.querySelector('.overlay');
@@ -1676,7 +1742,7 @@ function openYearlyGridDialog() {
                 // Added style bottom: 8px if isFinishWeek to stack them visually.
             }
 
-            rowHtml += `<td class="${cls}" style="${cellStyle}" ${titleAttr}>${content}</td>`;
+            rowHtml += `<td class="${cls} annual-edit-cell ${getWeekEdit(m, parseISO(w.start)) ? 'has-week-edit' : ''}" style="${cellStyle}" ${titleAttr}><button type="button" data-week="${w.start}" aria-label="Keisti ${escapeHTML(m.name)} savaitę ${w.start}">${content || '＋'}</button></td>`;
         });
 
         // IF NO OVERLAP: New Cell
@@ -1690,6 +1756,14 @@ function openYearlyGridDialog() {
         }
 
         tr.innerHTML = rowHtml;
+        tr.querySelectorAll('button[data-week]').forEach(button => {
+            button.onclick = () => openAnnualWeekEditor(m, button.dataset.week, () => {
+                const left = container.scrollLeft, top = container.scrollTop;
+                ov.remove(); openYearlyGridDialog();
+                const next = document.querySelector('#yGridContainer');
+                if (next) { next.scrollLeft = left; next.scrollTop = top; }
+            });
+        });
         tbody.appendChild(tr);
     });
 
