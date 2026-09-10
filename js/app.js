@@ -957,58 +957,19 @@ function renderEliteGrid(container, monday) {
 
 function getEventsForDay(dateObj) {
     const events = [];
-    // REMOVED Global Check that prevented exceptions:
-    // const grpEvt = getGroupEventType(dateObj, null);
-    // if (grpEvt) return [];
-
     modulesFiltered().forEach(mod => {
-        if (getGroupEventType(dateObj, mod.group)) return;
-
-        const info = getDayInfo(mod, dateObj);
-
-        // Calculate slots for current day and previous/default baseline
-        const prevDate = addDays(dateObj, -7);
-        const prevInfo = getDayInfo(mod, prevDate);
-        const prevSet = getSlotSet(prevInfo.count, prevInfo.start);
-
-        // Use either info from override or default logic
-        const curSet = getSlotSet(info.count, info.start);
-
-
-
-        // Calculate differences
-        const keptSlots = [...curSet].filter(x => prevSet.has(x)).sort((a, b) => a - b);
-        const newSlots = [...curSet].filter(x => !prevSet.has(x)).sort((a, b) => a - b);
-        const removedSlots = [...prevSet].filter(x => !curSet.has(x)).sort((a, b) => a - b);
-
-        const chunks = [];
-
-        // Helper to buffer ranges
-        const toRanges = (slots, status) => {
-            if (slots.length === 0) return;
-            let start = slots[0], count = 1;
-            for (let i = 1; i < slots.length; i++) {
-                if (slots[i] === slots[i - 1] + 1) {
-                    count++;
-                } else {
-                    chunks.push({ start, len: count, mod, isNew: status === 'new', isRemoved: status === 'removed', isOverride: isOverridden(mod, dateObj) });
-                    start = slots[i]; count = 1;
-                }
-            }
-            chunks.push({ start, len: count, mod, isNew: status === 'new', isRemoved: status === 'removed', isOverride: isOverridden(mod, dateObj) });
-        };
-
-        if (keptSlots.length > 0) toRanges(keptSlots, 'normal');
-        if (newSlots.length > 0) toRanges(newSlots, 'new');
-
-        // Only show removed lessons if it is an override day (meaning we explicitly changed it)
-        // OR if count became 0 unexpectedly. But usually override dictates change.
-        // Only show removed lessons if there is an actual difference detected from previous week
-        if (removedSlots.length > 0) {
-            toRanges(removedSlots, 'removed');
-        }
-
-        chunks.forEach(c => events.push(c));
+        // Use the same date-aware, target-capped plan as the annual calendar.
+        // This includes module start, fortnightly attendance, holidays and overrides.
+        const count = planForDate(mod, dateObj);
+        if (count <= 0) return;
+        events.push({
+            start: getEffectiveStartSlot(mod, dateObj),
+            len: count,
+            mod,
+            isOverride: isOverridden(mod, dateObj),
+            isNew: false,
+            isRemoved: false
+        });
     });
     return events;
 }
