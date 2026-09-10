@@ -881,16 +881,15 @@ function renderEliteGrid(container, monday) {
 
         // Render Events
         const rowEvents = getEventsForDay(curDate);
+        const laneCount = packEvents(rowEvents);
+        contentCell.style.gridTemplateRows = `repeat(${Math.max(1, laneCount)}, minmax(104px, auto))`;
         rowEvents.forEach(ev => {
             const block = document.createElement('div');
             block.className = 'elite-block';
 
-            const colWidth = 100 / 13;
-            const left = (ev.start) * colWidth;
-            const width = (ev.len) * colWidth;
-
-            block.style.left = `calc(${left}% + 2px)`;
-            block.style.width = `calc(${width}% - 4px)`;
+            block.style.gridColumn = `${ev.start + 1} / span ${ev.len}`;
+            block.style.gridRow = String(ev.rowIndex + 1);
+            block.title = `${ev.mod.name} · ${ev.mod.group} · ${formatRange(ev.start, ev.len)}${ev.mod.teacher ? ' · ' + ev.mod.teacher : ''}`;
             block.style.borderColor = ev.mod.color || '#0f172a';
             // Use lighter background for the block based on module color (simple opacity simulation via border color usage or fixed)
             // Since we can't easily hex2rgba here without helper, let's use a trick or just simple style
@@ -919,7 +918,7 @@ function renderEliteGrid(container, monday) {
             const pamStr = (startNum === endNum) ? `${startNum} pam.` : `${startNum}-${endNum} pam.`;
 
             block.innerHTML = `
-                <div class="flex justify-between items-start">
+                <div class="flex flex-wrap gap-x-2 justify-between items-start">
                     <div class="time text-[10px] font-extrabold text-navy-900">${pamStr}</div>
                     <div class="time text-[9px] opacity-70">${timeRange}</div>
                 </div>

@@ -305,7 +305,10 @@ body {
 .elite-grid-container {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    height: auto;
+    min-width: 1640px;
+    width: 100%;
+    flex-shrink: 0;
     background: #e2e8f0;
     /* Grid line color */
     gap: 1px;
@@ -316,7 +319,7 @@ body {
 
 .elite-header-row {
     display: grid;
-    grid-template-columns: 80px repeat(13, minmax(100px, 1fr));
+    grid-template-columns: 80px repeat(13, minmax(120px, 1fr));
     /* 80px for days col, rest for times */
     background: white;
     /* position: sticky; top: 0; z-index: 20; */
@@ -341,7 +344,7 @@ body {
 
 .elite-body-row {
     display: grid;
-    grid-template-columns: 80px repeat(13, minmax(100px, 1fr));
+    grid-template-columns: 80px repeat(13, minmax(120px, 1fr));
     background: white;
     min-height: 100px;
 }
@@ -375,6 +378,11 @@ body {
 .elite-content-cell {
     grid-column: 2 / -1;
     position: relative;
+    display: grid;
+    grid-template-columns: repeat(13, minmax(0, 1fr));
+    row-gap: 8px;
+    padding: 8px 0;
+    min-width: 0;
 }
 
 /* Vertical Grid Lines in Content */
@@ -404,9 +412,10 @@ body {
 
 /* --- MODULE BLOCKS (PILLS) --- */
 .elite-block {
-    position: absolute;
-    top: 8px;
-    bottom: 8px;
+    position: relative;
+    min-width: 0;
+    margin: 0 3px;
+    min-height: 104px;
     border-radius: 6px;
     background: white;
     border-left: 4px solid var(--navy-900);
@@ -440,13 +449,14 @@ body {
     line-height: 1.2;
     margin-bottom: 4px;
     color: var(--navy-900);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .elite-block .details {
     display: flex;
+    flex-wrap: wrap;
+    overflow-wrap: anywhere;
     align-items: center;
     gap: 8px;
     font-size: 10px;
