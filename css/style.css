@@ -1113,3 +1113,31 @@ th.y-col-fixed {
 .annual-edit-dialog button { padding: 8px 12px; border-radius: 6px; background: #f1f5f9; font-size: 12px; cursor: pointer; }
 .annual-edit-dialog button.save { background: #4f46e5; color: white; }
 .annual-edit-dialog button:disabled { opacity: .4; cursor: default; }
+
+/* Aligned annual plan: equal week columns and explicit date lines. */
+#yGridContainer .y-table { table-layout: fixed; width: 100%; font-variant-numeric: tabular-nums; }
+#yGridContainer .y-table th { box-sizing: border-box; }
+#yGridContainer .y-header-sem { height: 28px; padding: 4px; background: #eef2f7; color: #475569; font-size: 10px; letter-spacing: .06em; position: sticky; top: 0; z-index: 30; }
+#yGridContainer .y-header-month { height: 28px; padding: 3px 1px; background: #fff; font-size: 10px; box-shadow: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: sticky; top: 28px; z-index: 30; }
+#yGridContainer .y-header-week { height: 42px; padding: 4px 0; background: #f8fafc; white-space: nowrap; font-size: 9px; letter-spacing: 0; position: sticky; top: 56px; z-index: 30; }
+.annual-week-dates { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; line-height: 12px; font-weight: 600; }
+.annual-week-dates > span { display: block; width: 2ch; text-align: center; }
+.annual-week-dates > span:last-child { color: #64748b; }
+#yGridContainer .annual-month-start { border-left: 1px solid #cbd5e1; }
+#yGridContainer th.y-col-fixed { height: 98px !important; font-size: 10px; background: #f8fafc; }
+#yGridContainer .y-col-fixed.y-sem2 { left: 420px; }
+#yGridContainer .y-col-fixed { box-sizing: border-box; }
+#yGridContainer td.y-col-fixed { padding-top: 9px; padding-bottom: 9px; }
+#yGridContainer .y-cell-empty { background: #fff; }
+#yGridContainer .annual-edit-cell > button { min-height: 36px; font-size: 11px; }
+#yGridContainer .annual-edit-cell.y-cell-empty > button { color: transparent; }
+#yGridContainer .annual-edit-cell.y-cell-empty > button:hover, #yGridContainer .annual-edit-cell.y-cell-empty > button:focus-visible { color: #6366f1; }
+#yGridContainer .annual-empty-state { padding: 36px 16px; text-align: center; color: #64748b; background: white; }
+.annual-empty-state strong, .annual-empty-state span { display: block; }
+.annual-empty-state strong { font-size: 14px; color: #334155; margin-bottom: 6px; }
+.annual-calendar-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; width: 100%; }
+#yReportCalendarGrid .calendar-card { min-width: 0; padding: 10px; }
+#yReportCalendarGrid .calendar-card h3 { font-size: 11px; }
+#yReportCalendarGrid .cell { min-height: 28px; height: 28px; font-size: 10px; }
+#yReportCalendarContainer { padding: 12px; background: #f1f5f9; }
+@media (max-width: 1200px) { .annual-calendar-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }

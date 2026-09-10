@@ -1535,6 +1535,8 @@ function openYearlyGridDialog() {
 
 
 
+    const extraEndColumn = Boolean(state.semEnd && weeks.length && weeks[weeks.length - 1].start !== state.semEnd);
+
     // HEADER HTML
     // Row 1: Fixed Cols (rowspan 3) + Semester Headers
     let htmlSem = `<th class="y-col-fixed" rowspan="3" style="z-index:40; top:0; height:72px;">Modulis</th>
@@ -1543,7 +1545,7 @@ function openYearlyGridDialog() {
                    <th class="y-col-fixed y-sem1" rowspan="3" style="z-index:40; top:0; height:72px;">I pusm.</th>
                    <th class="y-col-fixed y-sem2" rowspan="3" style="z-index:40; top:0; height:72px;">II pusm.</th>
                    <th colspan="${sem1Weeks}" class="y-header-sem">I PUSMETIS</th>
-                   <th colspan="${sem2Weeks + 1}" class="y-header-sem">II PUSMETIS</th>`;
+                   <th colspan="${sem2Weeks + (extraEndColumn ? 1 : 0)}" class="y-header-sem">II PUSMETIS</th>`;
 
     // Row 2: Months (sticky top 24)
     let htmlMonth = '';
@@ -1575,10 +1577,11 @@ function openYearlyGridDialog() {
         const friday = addDays(parseISO(w.start), 4);
         let dEnd = friday.getDate();
         const pad = (n) => n < 10 ? '0' + n : n;
-        let label = `${pad(dStart)}-${pad(dEnd)}`;
+        let label = `<span class="annual-week-dates"><span>${pad(dStart)}</span><span>${pad(dEnd)}</span></span>`;
 
         // Slightly smaller font for the range
-        let classes = "y-header-week text-[9px] tracking-tighter";
+        let classes = "y-header-week";
+        if (i === 0 || w.month !== weeks[i - 1].month) classes += " annual-month-start";
 
         // If this is the last week AND we have an Overlap, mark it as PABAIGA in header
         if (i === weeks.length - 1 && isOverlap) {
@@ -1600,7 +1603,8 @@ function openYearlyGridDialog() {
 
     const table = document.createElement('table');
     table.className = 'y-table';
-    table.innerHTML = `<thead>
+    table.style.minWidth = `${470 + (weeks.length + (extraEndColumn ? 1 : 0)) * 24}px`;
+    table.innerHTML = `<colgroup><col style="width:220px"><col style="width:100px"><col style="width:50px"><col style="width:50px"><col style="width:50px">${weeks.map(() => '<col>').join('')}${extraEndColumn ? '<col>' : ''}</colgroup><thead>
         <tr>${htmlSem}</tr>
         <tr>${htmlMonth}</tr>
         <tr>${htmlWeek}</tr>
@@ -1767,6 +1771,11 @@ function openYearlyGridDialog() {
         tbody.appendChild(tr);
     });
 
+    if (!tbody.children.length) {
+        const empty = document.createElement('tr');
+        empty.innerHTML = `<td colspan="${5 + weeks.length + (extraEndColumn ? 1 : 0)}" class="annual-empty-state"><strong>Nėra rodomų modulių</strong><span>Pridėkite modulį arba pakeiskite pasirinktus filtrus.</span></td>`;
+        tbody.appendChild(empty);
+    }
     table.appendChild(tbody);
     container.appendChild(table);
 
