@@ -373,7 +373,17 @@ function packEvents(events) {
     return rows.length; // Total rows needed
 }
 
+// Compare calendar weeks in UTC to avoid daylight-saving time drift.
+function isAttendanceWeek(mod, dateObj) {
+    if (Number(mod.repeatWeeks) !== 2) return true;
+    const start = parseISO(mod.start);
+    const mondayUTC = d => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate() - (d.getDay() + 6) % 7);
+    const weeks = (mondayUTC(dateObj) - mondayUTC(start)) / (7 * 86400000);
+    return weeks >= 0 && weeks % 2 === 0;
+}
+
 function getDayInfo(mod, dateObj) {
+    if (!isAttendanceWeek(mod, dateObj)) return { count: 0, start: 1, event: null };
     const evtType = getGroupEventType(dateObj, mod.group);
     if (evtType) return { count: 0, start: 1, event: evtType };
     const idx = dayIndex(dateObj);
@@ -1086,7 +1096,7 @@ function renderSidebar() {
         div.style.borderLeft = `4px solid ${modColor}`;
         div.innerHTML = `<div class="flex justify-between items-start mb-2">
             <div>
-                <h4 class="text-sm font-bold text-navy-900 leading-tight">${escapeHTML(m.name)}</h4>
+                <h4 class="text-sm font-bold text-navy-900 leading-tight">${escapeHTML(m.name)}</h4>${Number(m.repeatWeeks) === 2 ? '<span class="text-xs text-indigo-600">Kas antrą savaitę</span>' : ''}
                 <span class="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded mt-1 inline-block font-medium">${escapeHTML(m.group)}</span>
                 ${m.teacher ? `<div class="text-[10px] text-slate-400 mt-1 flex items-center gap-1"><span class="material-symbols-outlined text-[10px] align-text-bottom">person</span>${escapeHTML(m.teacher)}</div>` : ''}
             </div>
@@ -1135,7 +1145,8 @@ function addModule() {
     const sched = []; const schedStarts = [];
     for (let i = 0; i < 7; i++) { sched[i] = parseInt($(`.d${i}`).value, 10) || 0; schedStarts[i] = parseInt($(`.ds${i}`).value, 10) || 1; }
     if (!name || !group || !target || !start) return alert('Užpildykite visus laukus');
-    state.modules.push({ id: 'm' + Date.now(), name, group, teacher, target, start, color, sched, schedStarts, overrides: [] });
+    const repeatWeeks = Number($('#mRepeat').value) === 2 ? 2 : 1;
+    state.modules.push({ repeatWeeks, id: 'm' + Date.now(), name, group, teacher, target, start, color, sched, schedStarts, overrides: [] });
     save(); $('#mName').value = ''; if (elTeacher) elTeacher.value = ''; $('#mTarget').value = ''; for (let i = 0; i < 7; i++) { $(`.d${i}`).value = 0; $(`.ds${i}`).value = 1; }
     renderAll();
 }
@@ -1399,7 +1410,8 @@ function openEditModuleDialog(mid) {
         group: $('#emGroup', ov),
         color: $('#emColor', ov),
         target: $('#emTarget', ov),
-        start: $('#emStart', ov)
+        start: $('#emStart', ov),
+        repeat: $('#emRepeat', ov)
     };
 
     els.name.value = m.name || '';
@@ -1407,6 +1419,7 @@ function openEditModuleDialog(mid) {
     els.group.value = m.group || '';
     els.color.value = m.color || '#3b82f6';
     els.target.value = m.target || '';
+    els.repeat.value = Number(m.repeatWeeks) === 2 ? '2' : '1';
 
     flatpickr(els.start, {
         locale: 'lt', dateFormat: 'Y-m-d', defaultDate: m.start || ''
@@ -1417,7 +1430,7 @@ function openEditModuleDialog(mid) {
         const newGroup = els.group.value.trim();
         const newTarget = parseInt(els.target.value, 10);
 
-        if (!newName || !newGroup || !newTarget) return alert('Užpildykite visus privalomus laukus');
+        if (!newName || !newGroup || !newTarget || !els.start.value) return alert('Užpildykite visus privalomus laukus');
 
         m.name = newName;
         m.teacher = els.teacher.value.trim();
@@ -1425,6 +1438,7 @@ function openEditModuleDialog(mid) {
         m.color = els.color.value;
         m.target = newTarget;
         m.start = els.start.value;
+        m.repeatWeeks = Number(els.repeat.value) === 2 ? 2 : 1;
 
         save();
         renderAll();

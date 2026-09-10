@@ -49,7 +49,7 @@
     </script>
 
     <link rel="stylesheet" href="css/style.css?v=8">
-    <script src="js/app.js?v=8" defer></script>
+    <script src="js/app.js?v=9" defer></script>
 </head>
 
 <body class="min-h-screen flex flex-col overflow-x-hidden bg-slate-50 text-navy-800">
@@ -330,7 +330,10 @@
                                             class="w-full text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 shadow-sm"
                                             placeholder="YYYY-MM-DD"></div>
                                 </div>
-                                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                <div><label for="mRepeat" class="text-xs font-bold text-slate-500">Pasikartojimas</label>
+<select id="mRepeat" class="w-full text-sm border-slate-200 rounded-lg"><option value="1">Kiekvieną savaitę</option><option value="2">Kas antrą savaitę</option></select>
+<p class="text-xs text-slate-500 mt-1">Pirmoji lankymo savaitė – savaitė, kurioje yra modulio pradžios data. Atostogos kartojimosi ritmo nekeičia.</p></div>
+<div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
                                     <label
                                         class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2 text-center">Savaitės
                                         planas</label>
@@ -529,7 +532,9 @@
                         <input id="emStart" type="text"
                             class="w-full text-sm border-slate-200 rounded-lg focus:border-navy-900 focus:ring-navy-900 shadow-sm"
                             placeholder="YYYY-MM-DD">
-                    </div>
+                    </div><div><label for="emRepeat" class="text-xs font-bold text-slate-500">Pasikartojimas</label>
+<select id="emRepeat" class="w-full text-sm border-slate-200 rounded-lg"><option value="1">Kiekvieną savaitę</option><option value="2">Kas antrą savaitę</option></select>
+<p class="text-xs text-slate-500 mt-1">Pirmoji lankymo savaitė – savaitė, kurioje yra modulio pradžios data. Atostogos kartojimosi ritmo nekeičia.</p></div>
                 </div>
                 <div class="flex justify-end gap-3 pt-5 mt-2 border-t border-slate-100">
                     <button
