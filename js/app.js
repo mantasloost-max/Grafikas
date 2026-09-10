@@ -882,7 +882,7 @@ function renderEliteGrid(container, monday) {
         // Render Events
         const rowEvents = getEventsForDay(curDate);
         const laneCount = packEvents(rowEvents);
-        contentCell.style.gridTemplateRows = `repeat(${Math.max(1, laneCount)}, minmax(104px, auto))`;
+        contentCell.style.gridTemplateRows = `repeat(${Math.max(1, laneCount)}, ${laneCount ? "62px" : "28px"})`;
         rowEvents.forEach(ev => {
             const block = document.createElement('div');
             block.className = 'elite-block';

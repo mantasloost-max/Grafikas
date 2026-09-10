@@ -48,8 +48,8 @@
         }
     </script>
 
-    <link rel="stylesheet" href="css/style.css?v=10">
-    <script src="js/app.js?v=10" defer></script>
+    <link rel="stylesheet" href="css/style.css?v=11">
+    <script src="js/app.js?v=11" defer></script>
 </head>
 
 <body class="min-h-screen flex flex-col overflow-x-hidden bg-slate-50 text-navy-800">
@@ -423,18 +423,17 @@
                 </div>
 
                 <!-- Main Content (Flex Row) -->
-                <div class="flex-1 overflow-hidden flex flex-row relative">
+                <div class="flex-1 min-h-0 overflow-hidden flex flex-col relative">
 
                     <!-- Left: Timeline Grid -->
-                    <div class="flex-1 overflow-auto p-4 md:p-6 relative" id="timelineWrapper">
+                    <div class="flex-1 min-h-0 overflow-auto p-2 relative" id="timelineWrapper">
                         <!-- Timelines will be injected here -->
                         <div id="gridContainer" class="elite-grid-container shadow-sm"></div>
                     </div>
 
                     <!-- Right: Smart Insights Sidebar -->
-                    <div
-                        class="w-80 bg-slate-50 border-l border-slate-200 p-6 overflow-y-auto flex-shrink-0 z-10 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)]">
-                        <h4 class="font-bold text-navy-900 text-lg mb-6 flex items-center gap-2">Savaitės Įžvalgos</h4>
+                    <details class="weekly-insights">
+                        <summary>Savaitės įžvalgos · plano vykdymas, pranešimai ir pakeitimai</summary><div class="weekly-insights-content">
 
                         <div class="insight-card">
                             <div class="insight-title">Plano Vykdymas</div>
@@ -461,7 +460,7 @@
                             <div id="weekReportContent" class="text-xs text-blue-900 space-y-1"></div>
                         </div>
 
-                    </div>
+                    </div></details>
                 </div>
             </div>
         </div>
