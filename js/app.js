@@ -97,7 +97,14 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-function save() { localStorage.setItem(storageKey, JSON.stringify(state)); }
+function save() {
+    const previous = localStorage.getItem(storageKey) || JSON.stringify({modules: [], vacations: []});
+    const next = JSON.stringify(state);
+    try { localStorage.setItem(storageKey, next); }
+    catch (error) { showNotice('Nepavyko išsaugoti. Eksportuokite planą į failą.'); throw error; }
+    if (previous !== next) { undoState = previous; showNotice('Išsaugota šioje naršyklėje.', true); }
+    renderFilters(); refreshWorkspace();
+}
 function load() { try { return JSON.parse(localStorage.getItem(storageKey)); } catch (e) { return null; } }
 
 function toLocalISO(d) { const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0'); return `${y}-${m}-${day}`; }
@@ -297,7 +304,7 @@ function renderVacationsList() {
                     ${groupsContent}
                 </td>
                 <td class="px-4 py-3 text-center">
-                    <button onclick="delVac(${i})" class="text-slate-300 hover:text-red-500 hover:bg-red-50 p-1 rounded transition-colors" title="Ištrinti">
+                    <button onclick="delVac(${state.vacations.indexOf(v)})" class="text-slate-300 hover:text-red-500 hover:bg-red-50 p-1 rounded transition-colors" title="Ištrinti">
                         <span class="material-symbols-outlined text-lg">delete</span>
                     </button>
                 </td>
@@ -786,10 +793,11 @@ function openWeeklyDialog() {
     const weekReport = ov.querySelector('#weekReportContent');
     const statAtt = ov.querySelector('#statAttendance');
 
-    let currentMonday = getMonday(new Date());
+    let currentMonday = workspaceMonday ? parseISO(workspaceMonday) : getMonday(new Date());
 
     const updateView = (mon) => {
         currentMonday = mon;
+        workspaceMonday = toLocalISO(mon);
         // Update Picker Text
         const sunday = addDays(mon, 6);
         picker.value = `${toLocalISO(mon)} — ${toLocalISO(sunday)}`;
@@ -815,11 +823,12 @@ function openWeeklyDialog() {
         }
     });
 
+    ov.querySelector('#weekToday').onclick = () => updateView(getMonday(new Date()));
     btnPrev.onclick = () => updateView(addDays(currentMonday, -7));
     btnNext.onclick = () => updateView(addDays(currentMonday, 7));
 
     ov.querySelector('.close').onclick = () => ov.remove();
-    document.body.appendChild(ov);
+    mountWorkspaceView(ov, 'week');
 
     // Initial Render
     updateView(currentMonday);
@@ -905,6 +914,9 @@ function renderEliteGrid(container, monday) {
             block.title = `${ev.mod.name} · ${ev.mod.group} · ${formatRange(ev.start, ev.len)}${ev.mod.teacher ? ' · ' + ev.mod.teacher : ''}`;
             block.style.setProperty('--module-color', ev.mod.color || '#475569');
             block.tabIndex = 0;
+            block.setAttribute('role', 'button');
+            block.onclick = () => openLessonDetails(ev, curDate);
+            block.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); block.click(); } };
             block.setAttribute('aria-label', block.title);
             if (ev.isOverride) block.classList.add('is-override');
             if (ev.isNew) block.classList.add('is-new');
@@ -1048,7 +1060,7 @@ function renderSidebar() {
                 <button class="text-slate-300 hover:text-red-500 transition-colors p-1" data-act="delMod" data-mid="${m.id}"><span class="material-symbols-outlined text-lg">delete</span></button>
             </div>
         </div>
-          <div class="text-xs text-slate-500 space-y-1.5"><div class="flex justify-between"><span>Tikslas:</span> <span class="font-bold text-navy-900">${m.target}</span></div><div class="flex justify-between"><span>Pravesta:</span> <span class="font-bold text-navy-900">${done}</span></div><div class="flex justify-between"><span>Liko:</span> <span class="font-bold text-navy-900">${left}</span></div><div class="flex justify-between"><span>Prognozė:</span> <span class="font-bold text-emerald-600">${finish}</span></div></div>
+          <div class="text-xs text-slate-500 space-y-1.5"><div class="flex justify-between"><span>Tikslas:</span> <span class="font-bold text-navy-900">${m.target}</span></div><div class="flex justify-between"><span>Suplanuota iki vakar:</span> <span class="font-bold text-navy-900">${done}</span></div><div class="flex justify-between"><span>Liko:</span> <span class="font-bold text-navy-900">${left}</span></div><div class="flex justify-between"><span>Prognozė:</span> <span class="font-bold text-emerald-600">${finish}</span></div></div>
           <div class="mt-3 pt-2 border-t border-slate-100 flex gap-2">
             <button class="flex-1 text-xs font-semibold text-navy-900 hover:text-blue-600 flex items-center justify-center gap-1 transition-colors py-1.5 rounded hover:bg-slate-50" data-act="editMod" data-mid="${m.id}"><span class="material-symbols-outlined text-sm">edit</span> Redaguoti</button>
             <div class="w-px bg-slate-200 my-1"></div>
@@ -1056,10 +1068,10 @@ function renderSidebar() {
           </div>`;
         list.appendChild(div);
     });
-    list.onclick = (e) => {
+    list.onclick = async (e) => {
         const btn = e.target.closest('button'); if (!btn) return;
         const act = btn.dataset.act, mid = btn.dataset.mid;
-        if (act === 'delMod') { if (confirm('Trinti?')) { state.modules = state.modules.filter(x => x.id !== mid); save(); renderAll(); } }
+        if (act === 'delMod') { if (await askConfirmation('Pašalinti šį modulį?', 'Jį bus galima grąžinti mygtuku „Atšaukti pakeitimą“.')) { state.modules = state.modules.filter(x => x.id !== mid); save(); renderAll(); } }
         if (act === 'editMod') { openEditModuleDialog(mid); }
         if (act === 'addOv') { openOverrideDialog(mid); }
     };
@@ -1075,7 +1087,7 @@ function renderVacations() {
         const typeLabel = (v.type === 'sick') ? '<span class="text-red-500 font-bold">LIGA</span>' : 'Atostogos';
         const tag = document.createElement('span');
         tag.className = 'inline-flex items-center text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded border border-slate-200';
-        tag.innerHTML = `${typeLabel} <b>${v.from}</b><span class="text-slate-400 mx-1">➜</span><b>${v.to}</b> <span class="text-slate-400 ml-1">(${grp})</span> <button class="ml-2 text-slate-400 hover:text-red-500 font-bold" onclick="delVac(${i})">×</button>`;
+        tag.innerHTML = `${typeLabel} <b>${v.from}</b><span class="text-slate-400 mx-1">➜</span><b>${v.to}</b> <span class="text-slate-400 ml-1">(${grp})</span> <button class="ml-2 text-slate-400 hover:text-red-500 font-bold" onclick="delVac(${state.vacations.indexOf(v)})">×</button>`;
         box.appendChild(tag);
     });
 }
@@ -1087,46 +1099,28 @@ function addModule() {
     const target = parseInt($('#mTarget').value, 10); const start = $('#mStart').value; const color = $('#mColor').value;
     const sched = []; const schedStarts = [];
     for (let i = 0; i < 7; i++) { sched[i] = parseInt($(`.d${i}`).value, 10) || 0; schedStarts[i] = parseInt($(`.ds${i}`).value, 10) || 1; }
-    if (!name || !group || !target || !start) return alert('Užpildykite visus laukus');
+    if (!name) return fieldError($('#mName'), 'Įveskite modulio pavadinimą.');
+    if (!group) return fieldError($('#mGroup'), 'Įveskite grupę.');
+    if (!(target > 0)) return fieldError($('#mTarget'), 'Tikslas turi būti didesnis už 0.');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(start)) return fieldError($('#mStart'), 'Pasirinkite pradžios datą.');
+    for (let i = 0; i < 7; i++) if (!Number.isInteger(Number($(`.d${i}`).value)) || sched[i] < 0 || sched[i] > 13 - schedStarts[i]) return fieldError($(`.d${i}`), 'Patikrinkite pamokų skaičių (iki 12 pamokos).');
     const repeatWeeks = Number($('#mRepeat').value) === 2 ? 2 : 1;
     state.modules.push({ repeatWeeks, id: 'm' + Date.now(), name, group, teacher, target, start, color, sched, schedStarts, overrides: [] });
     save(); $('#mName').value = ''; if (elTeacher) elTeacher.value = ''; $('#mTarget').value = ''; for (let i = 0; i < 7; i++) { $(`.d${i}`).value = 0; $(`.ds${i}`).value = 1; }
-    renderAll();
+    closeModuleDrawer(); renderAll();
 }
 function addVac() {
-    try {
-        const from = $('#vFrom').value, to = $('#vTo').value;
-        if (!from || !to) { alert('Nurodykite datas (Nuo - Iki)!'); return; }
-
-        const selectedOptions = Array.from($('#vGroups').selectedOptions);
-        const grps = selectedOptions.map(o => o.value);
-        const type = $('#vType').value;
-
-        // Validation: If Work Day, maybe warn if no group selected?
-        if (type === 'work' && grps.length === 0) {
-            if (!confirm('Pridedate "Darbo dieną" VISOMS grupėms. Ar tikrai?')) return;
-        }
-
-        state.vacations.push({ from, to, groups: grps, type });
-        save();
-
-        // Clear inputs
-        $('#vFrom').value = '';
-        $('#vTo').value = '';
-        // Reset selection
-        Array.from($('#vGroups').options).forEach(o => o.selected = false);
-
-        renderAll();
-        // alert('Pakeitimas sėkmingai pridėtas!'); // Optional: Feedback
-    } catch (err) {
-        console.error(err);
-        alert('Įvyko klaida pridedant įrašą: ' + err.message);
-    }
+    const from = $('#vFrom').value, to = $('#vTo').value;
+    if (!from) return fieldError($('#vFrom'), 'Pasirinkite pradžią.');
+    if (!to || to < from) return fieldError($('#vTo'), 'Pabaiga negali būti ankstesnė už pradžią.');
+    const groups = [...document.querySelectorAll('#groupCheckboxes input:checked')].map(input => input.value);
+    state.vacations.push({from, to, groups, type: $('#vType').value});
+    save(); renderAll();
 }
-function addSickThisWeek() {
+async function addSickThisWeek() {
     const today = new Date(); const day = today.getDay(); const diff = today.getDate() - day + (day == 0 ? -6 : 1);
     const monday = new Date(today.setDate(diff)); const sunday = new Date(today.setDate(diff + 6));
-    if (confirm(`Ar tikrai žymėti ligą šiai savaitei?`)) {
+    if (await askConfirmation('Žymėti ligą šiai savaitei?', 'Pamokos šią savaitę bus sustabdytos visoms grupėms.')) {
         state.vacations.push({ from: toLocalISO(monday), to: toLocalISO(sunday), groups: [], type: 'sick' }); save(); renderAll();
     }
 }
@@ -1134,7 +1128,7 @@ function importLithuanianHolidays() {
     const year = parseInt($('#acadYearSelect').value) || new Date().getFullYear();
     const dates = [`${year}-11-01`, `${year}-12-24`, `${year}-12-25`, `${year}-12-26`, `${year + 1}-01-01`, `${year + 1}-02-16`, `${year + 1}-03-11`, `${year + 1}-05-01`, `${year + 1}-06-24`, `${year + 1}-07-06`];
     let cnt = 0; dates.forEach(d => { if (!state.vacations.find(v => v.from === d && v.to === d)) { state.vacations.push({ from: d, to: d, groups: [], type: 'vac' }); cnt++; } });
-    save(); renderAll(); alert(`Pridėta ${cnt} šventinių dienų.`);
+    save(); renderAll(); showNotice(`Pridėta ${cnt} šventinių dienų.`, true);
 }
 function importScheduleFromImage() {
     if (!confirm('Įkelti 2025-2026 grafiką?')) return;
@@ -1246,9 +1240,9 @@ function openOverrideDialog(mid) {
             btn.className = 'text-red-500 hover:bg-red-100 p-0.5 rounded transition-colors';
             btn.innerHTML = '<span class="material-symbols-outlined text-sm">delete</span>';
             btn.title = 'Trinti';
-            btn.onclick = (e) => {
+            btn.onclick = async (e) => {
                 e.stopPropagation();
-                if (confirm(`Trinti pakeitimą ${o.from}?`)) {
+                if (await askConfirmation(`Trinti pakeitimą ${o.from}?`, 'Bus atkurtas ankstesnis planas.')) {
                     m.overrides = m.overrides.filter(x => x.from !== o.from);
                     save();
                     renderOverrideList();
@@ -1284,8 +1278,8 @@ function openOverrideDialog(mid) {
         // Show/Hide Delete Button
         if (existing) {
             btnDel.classList.remove('hidden');
-            btnDel.onclick = () => {
-                if (confirm('Ar tikrai trinti šios dienos pakeitimus?')) {
+            btnDel.onclick = async () => {
+                if (await askConfirmation('Atkurti ankstesnį planą?', 'Šios datos pakeitimas bus pašalintas.')) {
                     m.overrides = m.overrides.filter(o => o.from !== dateStr);
                     save(); renderAll();
                     // Don't close, just refresh
@@ -1326,11 +1320,12 @@ function openOverrideDialog(mid) {
     refreshInputs('');
 
     ov.querySelector('.save').onclick = () => {
-        const from = $('#ovFrom', ov).value; if (!from) return alert('Data?');
+        const from = $('#ovFrom', ov).value; if (!from) return fieldError($('#ovFrom', ov), 'Pasirinkite datą.');
         const sched = [], schedStarts = [];
         for (let i = 0; i < 7; i++) {
-            sched[i] = parseInt($(`.ovd${i}`, ov).value, 10) || 0;
-            schedStarts[i] = parseInt($(`.ovs${i}`, ov).value, 10) || 1;
+            sched[i] = Number($(`.ovd${i}`, ov).value);
+            schedStarts[i] = Number($(`.ovs${i}`, ov).value) || 1;
+            if (!Number.isInteger(sched[i]) || sched[i] < 0 || sched[i] > 13 - schedStarts[i]) return fieldError($(`.ovd${i}`, ov), 'Pamokos turi tilpti iki 12 pamokos.');
         }
 
         if (!m.overrides) m.overrides = [];
@@ -1373,7 +1368,10 @@ function openEditModuleDialog(mid) {
         const newGroup = els.group.value.trim();
         const newTarget = parseInt(els.target.value, 10);
 
-        if (!newName || !newGroup || !newTarget || !els.start.value) return alert('Užpildykite visus privalomus laukus');
+        if (!newName) return fieldError(els.name, 'Įveskite pavadinimą.');
+        if (!newGroup) return fieldError(els.group, 'Įveskite grupę.');
+        if (!(newTarget > 0)) return fieldError(els.target, 'Tikslas turi būti didesnis už 0.');
+        if (!els.start.value) return fieldError(els.start, 'Pasirinkite pradžią.');
 
         m.name = newName;
         m.teacher = els.teacher.value.trim();
@@ -1560,6 +1558,7 @@ function openYearlyGridDialog() {
         // Slightly smaller font for the range
         let classes = "y-header-week";
         if (i === 0 || w.month !== weeks[i - 1].month) classes += " annual-month-start";
+        if (w.start === toLocalISO(getMonday(new Date()))) classes += ' annual-current-week';
 
         // If this is the last week AND we have an Overlap, mark it as PABAIGA in header
         if (i === weeks.length - 1 && isOverlap) {
@@ -1581,7 +1580,7 @@ function openYearlyGridDialog() {
 
     const table = document.createElement('table');
     table.className = 'y-table';
-    table.style.minWidth = `${470 + (weeks.length + (extraEndColumn ? 1 : 0)) * 24}px`;
+    table.style.minWidth = `${470 + (weeks.length + (extraEndColumn ? 1 : 0)) * 20}px`;
     table.innerHTML = `<colgroup><col style="width:220px"><col style="width:100px"><col style="width:50px"><col style="width:50px"><col style="width:50px">${weeks.map(() => '<col>').join('')}${extraEndColumn ? '<col>' : ''}</colgroup><thead>
         <tr>${htmlSem}</tr>
         <tr>${htmlMonth}</tr>
@@ -1589,6 +1588,8 @@ function openYearlyGridDialog() {
     </thead>`;
 
     const tbody = document.createElement('tbody');
+    const weekTotals = weeks.map(() => 0);
+    let totalSem1 = 0, totalSem2 = 0;
     modulesFiltered().forEach(m => {
         const tr = document.createElement('tr');
 
@@ -1672,6 +1673,7 @@ function openYearlyGridDialog() {
                        <td class="y-col-fixed y-sem1 font-bold text-slate-700">${sem1 || ''}</td>
                        <td class="y-col-fixed y-sem2 font-bold text-slate-700">${sem2 || ''}</td>`;
 
+        totalSem1 += sem1; totalSem2 += sem2;
         // Generate Body Cells
         weeks.forEach((w, i) => {
             let sum = 0;
@@ -1698,6 +1700,7 @@ function openYearlyGridDialog() {
                 if (val > 0) details.push(`${dayNames[k]}: ${val}`);
                 wd = addDays(wd, 1);
             }
+            weekTotals[i] += sum;
             const cls = sum > 0 ? 'y-cell-val relative' : 'y-cell-empty relative';
             const cellStyle = sum > 0 ? bgStyle : '';
             const titleAttr = details.length ? `title="${details.join(', ')}"` : '';
@@ -1755,10 +1758,13 @@ function openYearlyGridDialog() {
         tbody.appendChild(empty);
     }
     table.appendChild(tbody);
+    const footer = document.createElement('tfoot');
+    footer.innerHTML = `<tr><td class="y-col-fixed">Iš viso</td><td class="y-col-fixed y-teacher"></td><td class="y-col-fixed y-target">${modulesFiltered().reduce((n,m) => n + Number(m.target || 0), 0)}</td><td class="y-col-fixed y-sem1">${totalSem1}</td><td class="y-col-fixed y-sem2">${totalSem2}</td>${weekTotals.map(n => `<td>${n || '—'}</td>`).join('')}</tr>`;
+    table.appendChild(footer);
     container.appendChild(table);
 
     ov.querySelector('.close').onclick = () => ov.remove();
-    document.body.appendChild(ov);
+    mountWorkspaceView(ov, 'year');
 
     const visibleModules = modulesFiltered();
     ov.querySelector('#annualSummary').textContent = `${startY}–${startY + 1} · ${toLocalISO(startDate)} – ${toLocalISO(addDays(endDate, -1))} · Modulių: ${visibleModules.length} · Tikslas: ${visibleModules.reduce((n, m) => n + Number(m.target || 0), 0)} val.`;
@@ -1768,12 +1774,14 @@ function openYearlyGridDialog() {
     toggle.onclick = () => {
         const hide = !calendarPane.hidden;
         calendarPane.hidden = hide;
+        workspaceYearCalendarHidden = hide;
         ov.querySelector('#ySplitter').hidden = hide;
         container.style.flex = hide ? '1 1 0%' : '0 0 auto';
         toggle.textContent = hide ? 'Rodyti kalendorių' : 'Slėpti kalendorių';
         toggle.setAttribute('aria-expanded', String(!hide));
     };
     renderYear('yReportCalendarGrid', endDate);
+    if (workspaceYearCalendarHidden) toggle.click();
 
     // --- SPLITTER LOGIC ---
     const splitter = ov.querySelector('#ySplitter');
@@ -1821,14 +1829,28 @@ function openYearlyGridDialog() {
         stopDrag(); // Ensure cleanup
         ov.remove();
     };
-    document.body.appendChild(ov);
+    mountWorkspaceView(ov, 'year');
 }
 
 function exportJSON() { const b = new Blob([JSON.stringify(state)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'kalendorius.json'; a.click(); }
-function importJSON(e) { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = (ev) => { try { state = JSON.parse(ev.target.result); save(); renderFilters(); renderAll(); alert('Įkelta!'); } catch (x) { alert('Klaida'); } }; r.readAsText(f); }
+function importJSON(e) {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = event => {
+        try {
+            const incoming = JSON.parse(event.target.result);
+            if (!incoming || !Array.isArray(incoming.modules) || !Array.isArray(incoming.vacations)) throw new Error('Netinkama plano struktūra.');
+            if (incoming.modules.some(m => !m.id || !m.name || !m.start || !Array.isArray(m.sched) || m.sched.length !== 7 || !(Number(m.target) > 0))) throw new Error('Netinkami modulio duomenys.');
+            state = incoming; save(); renderAll();
+        } catch (error) { showNotice('Failas neįkeltas: ' + error.message); }
+        e.target.value = '';
+    };
+    reader.readAsText(file);
+}
 function renderAll() {
-    // renderFilters(); // Removed to prevent resetting selection on change
-    try { renderInputs(); } catch (e) { console.error("Input Render Error:", e); }
+    renderFilters();
+    refreshWorkspace();
+    if (!document.querySelector(".d0")) { try { renderInputs(); } catch (e) { console.error("Input Render Error:", e); } }
     try { renderYear(); } catch (e) { console.error("Year Render Error:", e); }
     try { renderSidebar(); } catch (e) { console.error("Sidebar Render Error:", e); }
     try { renderVacationsList(); } catch (e) { console.error("Vacation Render Error:", e); }
@@ -1857,13 +1879,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const elGF = $('#groupFilter'); if (elGF) elGF.onchange = renderAll;
     const elMF = $('#moduleFilter'); if (elMF) elMF.onchange = renderAll;
     const elTF = $('#teacherFilter'); if (elTF) elTF.onchange = renderAll;
-    const elAY = $('#acadYearSelect'); if (elAY) elAY.onchange = renderAll;
+    const elAY = $('#acadYearSelect'); if (elAY) elAY.onchange = () => { workspaceMonday = toLocalISO(getMonday(new Date(Number(elAY.value), 8, 1))); renderAll(); };
 
     const elSem = $('#sem2Start');
     if (elSem) {
         flatpickr("#sem2Start", {
             locale: "lt", dateFormat: "Y-m-d", defaultDate: state.sem2Start,
-            onChange: (selected, dateStr) => { state.sem2Start = dateStr; save(); renderYear(); }
+            onChange: (selected, dateStr) => { state.sem2Start = dateStr; save(); renderAll(); }
         });
     }
 
@@ -1871,7 +1893,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (elEnd) {
         flatpickr("#semEnd", {
             locale: "lt", dateFormat: "Y-m-d", defaultDate: state.semEnd,
-            onChange: (selected, dateStr) => { state.semEnd = dateStr; save(); renderYear(); }
+            onChange: (selected, dateStr) => { state.semEnd = dateStr; save(); renderAll(); }
         });
     }
 
