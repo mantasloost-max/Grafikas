@@ -48,8 +48,8 @@
         }
     </script>
 
-    <link rel="stylesheet" href="css/style.css?v=16">
-    <script src="js/app.js?v=16" defer></script>
+    <link rel="stylesheet" href="css/style.css?v=17">
+    <script src="js/app.js?v=17" defer></script>
 </head>
 
 <body class="min-h-screen flex flex-col overflow-x-hidden bg-slate-50 text-navy-800">
@@ -552,11 +552,11 @@
                 class="bg-white rounded-xl shadow-2xl w-full max-w-[98vw] h-[95vh] overflow-hidden dialog ring-1 ring-slate-200 flex flex-col">
                 <div
                     class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 flex-shrink-0">
-                    <div class="flex items-center gap-4">
+                    <div class="annual-heading">
                         <h3 class="font-bold text-navy-900 flex items-center gap-2"><span
-                                class="material-symbols-outlined">table_chart</span> Metinis Planas</h3>
+                                class="material-symbols-outlined">table_chart</span> Metinis planas</h3><span id="annualSummary" class="annual-summary"></span>
                     </div>
-                    <button class="close text-slate-400 hover:text-navy-900 transition-colors"><span
+                    <button id="annualCalendarToggle" type="button" aria-expanded="true" class="annual-calendar-toggle">Slėpti kalendorių</button><button class="close text-slate-400 hover:text-navy-900 transition-colors"><span
                             class="material-symbols-outlined">close</span></button>
                 </div>
                 <div class="flex-1 flex flex-col min-h-0 relative" id="ySplitArea">

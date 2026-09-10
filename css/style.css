@@ -1141,3 +1141,10 @@ th.y-col-fixed {
 #yReportCalendarGrid .cell { min-height: 28px; height: 28px; font-size: 10px; }
 #yReportCalendarContainer { padding: 12px; background: #f1f5f9; }
 @media (max-width: 1200px) { .annual-calendar-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+.annual-heading { display: flex; flex-direction: column; gap: 4px; }
+.annual-summary { color: #64748b; font-size: 11px; font-variant-numeric: tabular-nums; }
+.annual-calendar-toggle { margin-left: auto; margin-right: 20px; padding: 7px 12px; border: 1px solid #cbd5e1; border-radius: 7px; background: white; color: #475569; font-size: 12px; cursor: pointer; }
+#yReportCalendarContainer[hidden], #ySplitter[hidden] { display: none; }
+.annual-calendar-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 1200px) { .annual-calendar-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }

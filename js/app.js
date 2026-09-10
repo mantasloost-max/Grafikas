@@ -599,7 +599,7 @@ function renderFilters() {
 }
 
 // --- MAIN CALENDAR RENDER ---
-function renderYear(targetId = 'yearWall') {
+function renderYear(targetId = 'yearWall', rangeEnd = null) {
     const todayEl = $('#todayStr');
     if (todayEl) todayEl.textContent = todayISO();
 
@@ -683,6 +683,7 @@ function renderYear(targetId = 'yearWall') {
 
     for (let i = 0; i < 12; i++) {
         const mObj = new Date(startY, 8 + i, 1);
+        if (rangeEnd && mObj >= rangeEnd) break;
         const y = mObj.getFullYear(), m = mObj.getMonth();
         const first = new Date(y, m, 1), last = new Date(y, m + 1, 0);
 
@@ -1470,37 +1471,11 @@ function openYearlyGridDialog() {
     const startY = parseInt($('#acadYearSelect').value, 10) || acadYearOf(new Date());
     const startDate = new Date(startY, 8, 1); // Sept 1st
 
-    // Determine End Date (Default July 1st, or custom School Year End)
-    let endDate = new Date(startY + 1, 6, 1); // July 1st default
+    // Teaching year: September through June unless an earlier end is selected.
+    let endDate = new Date(startY + 1, 6, 1);
     if (state.semEnd) {
-        const customEnd = parseISO(state.semEnd);
-        // Only use custom end if it's logically after start date
-        if (customEnd > startDate) {
-            // We want to include the week of the end date. 
-            // Logic below: while (cur < endDate).
-            // If customEnd is a Friday, and we want to show that week,
-            // endDate needs to be AFTER that week's start (Monday).
-            // Ideally, set endDate to customEnd + 1 day to be safe, or just use it.
-            // If customEnd is 2026-06-15 (Monday), loop: cur=2026-06-15 < 2026-06-15 is FALSE.
-            // So week starts on 15th serves.
-            // Let's add 7 days to customEnd to ensure we cover the final week?
-            // Or better: ensure endDate is the Monday AFTER the custom end.
-
-            // Simple approach: Use customEnd. 
-            // But we need to make sure the loop condition (cur < endDate) covers the last week.
-            // If customEnd is e.g. June 18 (Thursday).
-            // The week starts June 15 (Monday).
-            // We want this week to appear.
-            // 15 < 18 (True). So it generates.
-            // Next week starts June 22.
-            // 22 < 18 (False). Stops.
-            // So using customEnd directly should work found for loop `while(cur < endDate)`.
-            // However, let's bump it by 1 day to be inclusive if it falls exactly on Monday?
-            // If End is Monday June 15. Cur is June 15. 15 < 15 is False.
-            // So we would MISS the last week if it ends exactly on Monday.
-            // So let's add 1 day.
-            endDate = addDays(customEnd, 1);
-        }
+        const customEnd = addDays(parseISO(state.semEnd), 1);
+        if (customEnd > startDate && customEnd < endDate) endDate = customEnd;
     }
 
     // SEMESTER SPLIT
@@ -1518,7 +1493,10 @@ function openYearlyGridDialog() {
 
     while (cur < endDate) {
         const wEnd = addDays(cur, 6);
-        weeks.push({ start: toLocalISO(cur), end: toLocalISO(wEnd), month: cur.getMonth() });
+        const displayStart = cur < startDate ? startDate : cur;
+        const friday = addDays(cur, 4);
+        const displayEnd = friday >= endDate ? addDays(endDate, -1) : friday;
+        if (displayEnd >= displayStart) weeks.push({ start: toLocalISO(cur), end: toLocalISO(wEnd), displayStart: toLocalISO(displayStart), displayEnd: toLocalISO(displayEnd), month: displayStart.getMonth() });
         cur = addDays(cur, 7);
     }
 
@@ -1535,7 +1513,7 @@ function openYearlyGridDialog() {
 
 
 
-    const extraEndColumn = Boolean(state.semEnd && weeks.length && weeks[weeks.length - 1].start !== state.semEnd);
+    const extraEndColumn = false; // End date belongs to the final week, not an extra column.
 
     // HEADER HTML
     // Row 1: Fixed Cols (rowspan 3) + Semester Headers
@@ -1572,9 +1550,9 @@ function openYearlyGridDialog() {
         currentM = w.month;
         currentSpan++;
 
-        let dStart = parseISO(w.start).getDate();
+        let dStart = parseISO(w.displayStart).getDate();
         // Header shows the working week (Monday–Friday).
-        const friday = addDays(parseISO(w.start), 4);
+        const friday = parseISO(w.displayEnd);
         let dEnd = friday.getDate();
         const pad = (n) => n < 10 ? '0' + n : n;
         let label = `<span class="annual-week-dates"><span>${pad(dStart)}</span><span>${pad(dEnd)}</span></span>`;
@@ -1588,12 +1566,12 @@ function openYearlyGridDialog() {
             classes += " text-red-600 font-bold border-r border-red-200";
         }
 
-        htmlWeek += `<th class="${classes}" title="${w.start} – ${toLocalISO(friday)} (pirmadienis–penktadienis)">${label}</th>`;
+        htmlWeek += `<th class="${classes}" title="${w.displayStart} – ${w.displayEnd} (mokymosi savaitė)">${label}</th>`;
     });
 
     // IF NO OVERLAP (and semEnd is set), we append a separate PABAIGA column
     let pabaigaDateObj = null;
-    if (state.semEnd && !isOverlap) {
+    if (extraEndColumn) {
         pabaigaDateObj = parseISO(state.semEnd);
         currentSpan++;
         htmlWeek += `<th class="y-header-week text-red-600 font-bold border-l border-red-200">${pabaigaDateObj.getDate()}</th>`;
@@ -1750,7 +1728,7 @@ function openYearlyGridDialog() {
         });
 
         // IF NO OVERLAP: New Cell
-        if (state.semEnd && !isOverlap && pabaigaDateObj) {
+        if (extraEndColumn && pabaigaDateObj) {
             rowHtml += `<td class="y-cell-empty relative" style="border-left: 1px solid #e2e8f0; min-width: 24px;">
                 <div class="absolute inset-0 m-0.5 flex flex-col items-center justify-center bg-red-50/50 rounded border border-red-100">
                     <div class="text-[9px] font-bold text-red-600 leading-none">${pabaigaDateObj.getDate()}</div>
@@ -1782,10 +1760,20 @@ function openYearlyGridDialog() {
     ov.querySelector('.close').onclick = () => ov.remove();
     document.body.appendChild(ov);
 
-    // Render the Calendar in the bottom half
-    setTimeout(() => {
-        renderYear('yReportCalendarGrid');
-    }, 100);
+    const visibleModules = modulesFiltered();
+    ov.querySelector('#annualSummary').textContent = `${startY}–${startY + 1} · ${toLocalISO(startDate)} – ${toLocalISO(addDays(endDate, -1))} · Modulių: ${visibleModules.length} · Tikslas: ${visibleModules.reduce((n, m) => n + Number(m.target || 0), 0)} val.`;
+    container.style.height = `${Math.min(360, 155 + visibleModules.length * 42)}px`;
+    const calendarPane = ov.querySelector('#yReportCalendarContainer');
+    const toggle = ov.querySelector('#annualCalendarToggle');
+    toggle.onclick = () => {
+        const hide = !calendarPane.hidden;
+        calendarPane.hidden = hide;
+        ov.querySelector('#ySplitter').hidden = hide;
+        container.style.flex = hide ? '1 1 0%' : '0 0 auto';
+        toggle.textContent = hide ? 'Rodyti kalendorių' : 'Slėpti kalendorių';
+        toggle.setAttribute('aria-expanded', String(!hide));
+    };
+    renderYear('yReportCalendarGrid', endDate);
 
     // --- SPLITTER LOGIC ---
     const splitter = ov.querySelector('#ySplitter');
