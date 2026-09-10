@@ -1505,7 +1505,9 @@ function openYearlyGridDialog() {
         currentSpan++;
 
         let dStart = parseISO(w.start).getDate();
-        let dEnd = parseISO(w.end).getDate();
+        // Header shows the working week (Monday–Friday).
+        const friday = addDays(parseISO(w.start), 4);
+        let dEnd = friday.getDate();
         const pad = (n) => n < 10 ? '0' + n : n;
         let label = `${pad(dStart)}-${pad(dEnd)}`;
 
@@ -1517,7 +1519,7 @@ function openYearlyGridDialog() {
             classes += " text-red-600 font-bold border-r border-red-200";
         }
 
-        htmlWeek += `<th class="${classes}">${label}</th>`;
+        htmlWeek += `<th class="${classes}" title="${w.start} – ${toLocalISO(friday)} (pirmadienis–penktadienis)">${label}</th>`;
     });
 
     // IF NO OVERLAP (and semEnd is set), we append a separate PABAIGA column
