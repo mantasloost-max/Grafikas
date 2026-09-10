@@ -48,8 +48,8 @@
         }
     </script>
 
-    <link rel="stylesheet" href="css/style.css?v=11">
-    <script src="js/app.js?v=12" defer></script>
+    <link rel="stylesheet" href="css/style.css?v=13">
+    <script src="js/app.js?v=13" defer></script>
 </head>
 
 <body class="min-h-screen flex flex-col overflow-x-hidden bg-slate-50 text-navy-800">
@@ -394,15 +394,15 @@
         <div
             class="fixed inset-0 z-[60] flex items-center justify-center bg-navy-900/50 backdrop-blur-sm overlay p-4 animate-in fade-in duration-200">
             <div
-                class="bg-slate-50 rounded-xl shadow-2xl w-full max-w-[98vw] h-[95vh] overflow-hidden dialog ring-1 ring-slate-200 flex flex-col">
+                class="weekly-dialog bg-slate-50 rounded-xl shadow-2xl w-full max-w-[98vw] h-[95vh] overflow-hidden dialog ring-1 ring-slate-200 flex flex-col">
                 <!-- Header -->
                 <div
                     class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-white flex-shrink-0 shadow-sm z-20">
-                    <div class="flex items-center gap-6">
+                    <div class="week-heading">
                         <h3 class="font-bold text-navy-900 text-lg flex items-center gap-2">
-                            <span class="material-symbols-outlined text-gold-500">grid_view</span>
-                            Savaitės Tvarkaraštis
-                        </h3>
+                            <span class="material-symbols-outlined text-indigo-600">calendar_view_week</span>
+                            Savaitės tvarkaraštis
+                        </h3><span id="weekSummary" class="week-summary"></span>
                     </div>
                     <div class="flex items-center gap-4">
                         <div class="flex items-center gap-2">

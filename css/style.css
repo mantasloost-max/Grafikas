@@ -319,7 +319,7 @@ body {
 
 .elite-header-row {
     display: grid;
-    grid-template-columns: 56px repeat(13, minmax(0, 1fr));
+    grid-template-columns: 56px repeat(12, minmax(0, 1fr));
     /* 80px for days col, rest for times */
     background: white;
     /* position: sticky; top: 0; z-index: 20; */
@@ -344,7 +344,7 @@ body {
 
 .elite-body-row {
     display: grid;
-    grid-template-columns: 56px repeat(13, minmax(0, 1fr));
+    grid-template-columns: 56px repeat(12, minmax(0, 1fr));
     background: white;
     min-height: 100px;
 }
@@ -379,7 +379,7 @@ body {
     grid-column: 2 / -1;
     position: relative;
     display: grid;
-    grid-template-columns: repeat(13, minmax(0, 1fr));
+    grid-template-columns: repeat(12, minmax(0, 1fr));
     row-gap: 8px;
     padding: 8px 0;
     min-width: 0;
@@ -390,7 +390,7 @@ body {
     position: absolute;
     inset: 0;
     display: grid;
-    grid-template-columns: repeat(13, 1fr);
+    grid-template-columns: repeat(12, 1fr);
     pointer-events: none;
 }
 
@@ -1060,3 +1060,36 @@ th.y-col-fixed {
 .weekly-insights-content { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 8px 16px; max-height: 200px; overflow: auto; }
 .weekly-insights .insight-card { margin: 0; padding: 10px; }
 .weekly-insights .insight-stat-circle { width: auto; height: auto; border: 0; }
+
+/* Professional weekly view */
+.weekly-dialog { background: #f5f7fb; border-radius: 16px; }
+.week-heading { display: flex; flex-direction: column; gap: 3px; }
+.week-summary { color: #64748b; font-size: 11px; padding-left: 32px; }
+.weekly-dialog #timelineWrapper { padding: 12px; }
+.weekly-dialog .elite-grid-container { border-radius: 12px; border-color: #dce3ed; background: #e5eaf2; }
+.weekly-dialog .elite-header-cell { display: flex; flex-direction: column; gap: 2px; padding: 8px 2px; background: #f8fafc; border-color: #e9edf4; }
+.weekly-dialog .elite-header-cell strong { color: #1e293b; font-size: 13px; font-weight: 650; }
+.lesson-number, .week-corner-label { color: #94a3b8; font-size: 9px; letter-spacing: .08em; font-weight: 700; }
+.lesson-end { color: #94a3b8; font-size: 9px; }
+.weekly-dialog .elite-day-cell { background: #f8fafc; border-color: #e5eaf2; }
+.weekly-dialog .day-name { font-size: 11px; letter-spacing: .04em; color: #475569; }
+.weekly-dialog .day-date { font-size: 11px; font-weight: 600; color: #94a3b8; }
+.weekly-dialog .is-today .elite-day-cell { background: #eef2ff; box-shadow: inset 3px 0 #6366f1; }
+.weekly-dialog .is-today .day-name, .weekly-dialog .is-today .day-date { color: #4f46e5; }
+.weekly-dialog .is-today .elite-content-cell { background: #fafaff; }
+.weekly-dialog .is-weekend .elite-content-cell { background: #f8fafc; }
+.weekly-dialog .elite-line { border-color: #edf1f6; }
+.weekly-dialog .elite-line:nth-child(even) { background: transparent; }
+.weekly-dialog .elite-content-cell { padding: 5px 0; row-gap: 5px; }
+.weekly-dialog .elite-block { background: #fff; background: color-mix(in srgb, var(--module-color) 5%, white); border: 1px solid #e2e8f0; border-left: 3px solid var(--module-color); border-radius: 7px; padding: 5px 8px; gap: 2px; box-shadow: 0 1px 2px #0f172a08; color: #1e293b; }
+.weekly-dialog .elite-block:hover, .weekly-dialog .elite-block:focus-visible { border-top-color: var(--module-color); border-right-color: var(--module-color); border-bottom-color: var(--module-color); outline: none; box-shadow: 0 2px 6px #0f172a12; }
+.lesson-meta { display: flex; align-items: center; gap: 6px; justify-content: space-between; min-width: 0; line-height: 13px; }
+.lesson-group { font-size: 10px; font-weight: 750; letter-spacing: .02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lesson-range { font-size: 9px; font-variant-numeric: tabular-nums; color: #64748b; white-space: nowrap; }
+.lesson-title { font-size: 11px; font-weight: 650; line-height: 14px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.lesson-teacher { font-size: 9px; line-height: 12px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.weekly-dialog .now-indicator-line { width: 1px; background: #6366f1; box-shadow: none; opacity: .8; }
+.weekly-dialog .now-indicator-head { background: #6366f1; font-size: 8px; }
+.weekly-dialog .weekly-insights { background: #fff; }
+.weekly-dialog .weekly-insights summary { color: #64748b; font-weight: 500; font-size: 11px; }
+@media (max-width: 1100px) { .lesson-range { display: none; } .weekly-dialog .elite-block { padding: 5px; } }

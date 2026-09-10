@@ -5,7 +5,7 @@ const LT_MONTHS = ["Sausis", "Vasaris", "Kovas", "Balandis", "Gegužė", "Birže
 const DAYS_SHORT = ['Pir', 'Ant', 'Tre', 'Ket', 'Pen', 'Šeš', 'Sek'];
 const DAYS_FULL = ['Pirmadienį', 'Antradienį', 'Trečiadienį', 'Ketvirtadienį', 'Penktadienį', 'Šeštadienį', 'Sekmadienį'];
 const LESSON_SLOTS = [
-    { id: 0, t: "07:00 - 07:45" }, { id: 1, t: "08:00 - 08:45" }, { id: 2, t: "08:55 - 09:40" },
+    { id: 1, t: "08:00 - 08:45" }, { id: 2, t: "08:55 - 09:40" },
     { id: 3, t: "09:50 - 10:35" }, { id: 4, t: "10:45 - 11:30" }, { id: 5, t: "12:15 - 13:00" },
     { id: 6, t: "13:10 - 13:55" }, { id: 7, t: "14:05 - 14:50" }, { id: 8, t: "15:00 - 15:45" },
     { id: 9, t: "15:55 - 16:40" }, { id: 10, t: "16:50 - 17:35" }, { id: 11, t: "17:45 - 18:30" }, { id: 12, t: "18:40 - 19:25" }
@@ -331,7 +331,7 @@ function getEffectiveStartSlot(mod, dateObj) {
         if (ov.from <= tStr && ov.schedStarts) starts = ov.schedStarts; else break;
     }
     const dayIdxVal = dayIndex(dateObj);
-    return starts[dayIdxVal] !== undefined ? starts[dayIdxVal] : 1;
+    return Math.max(1, Number(starts[dayIdxVal]) || 1);
 }
 
 // --- LAYOUT HELPERS ---
@@ -460,8 +460,8 @@ function modulesFiltered() {
 }
 
 function formatTime(slotId) {
-    if (!LESSON_SLOTS[slotId]) return "??";
-    return LESSON_SLOTS[slotId].t.split(' - ')[0];
+    const slot = LESSON_SLOTS.find(s => s.id === Number(slotId));
+    return slot ? slot.t.split(' - ')[0] : '??';
 }
 function getSlotSet(count, start) {
     let set = new Set();
@@ -469,11 +469,21 @@ function getSlotSet(count, start) {
     return set;
 }
 function formatRange(start, count) {
-    if (!LESSON_SLOTS[start]) return "??";
-    const end = start + count - 1;
-    const sTime = LESSON_SLOTS[start].t.split(' - ')[0];
-    const eTime = LESSON_SLOTS[end] ? LESSON_SLOTS[end].t.split(' - ')[1] : '...';
-    return `${sTime}–${eTime} (${start}-${end} pam.)`;
+    const first = LESSON_SLOTS.find(s => s.id === Number(start));
+    const end = Number(start) + count - 1;
+    const last = LESSON_SLOTS.find(s => s.id === end);
+    if (!first) return '??';
+    return `${first.t.split(' - ')[0]}–${last ? last.t.split(' - ')[1] : '...'} (${start}-${end} pam.)`;
+}
+
+function currentTimelinePosition(minutes) {
+    const toMinutes = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+    for (let i = 0; i < LESSON_SLOTS.length; i++) {
+        const [begin, finish] = LESSON_SLOTS[i].t.split(' - ').map(toMinutes);
+        if (minutes < begin) return i === 0 ? null : i / LESSON_SLOTS.length * 100;
+        if (minutes <= finish) return (i + (minutes - begin) / (finish - begin)) / LESSON_SLOTS.length * 100;
+    }
+    return null;
 }
 
 function getWeeklyComparison(mondayCurrent) {
@@ -780,6 +790,9 @@ function openWeeklyDialog() {
 
         // Render Everything
         renderEliteGrid(container, mon);
+        const weekEvents = Array.from({length: 7}, (_, i) => getEventsForDay(addDays(mon, i)));
+        const summary = ov.querySelector('#weekSummary');
+        summary.textContent = `${weekEvents.flat().reduce((sum, e) => sum + e.len, 0)} pam. · ${new Set(weekEvents.flat().map(e => e.mod.group)).size} grupės · ${weekEvents.filter(e => e.length).length} mokymo d.`;
         renderSmartInsights(mon, alertsList, weekReport, statAtt);
     };
 
@@ -822,22 +835,15 @@ function renderEliteGrid(container, monday) {
     // Corner
     const corner = document.createElement('div');
     corner.className = 'elite-header-cell';
-    corner.innerHTML = '<span class="material-symbols-outlined text-slate-300">schedule</span>';
+    corner.innerHTML = '<span class="week-corner-label">DIENA</span>';
     headerRow.appendChild(corner);
 
     // Time Columns
     LESSON_SLOTS.forEach((slot, idx) => {
         const cell = document.createElement('div');
-        cell.className = 'elite-header-cell flex-col justify-between py-2';
+        cell.className = 'elite-header-cell';
         const times = slot.t.split(' - ');
-        // Design: Number in circle at top, Start time bigger, End time dimmer
-        cell.innerHTML = `
-            <div class="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 text-slate-500 text-[10px] font-extrabold flex items-center justify-center mb-1 shadow-sm">${idx}</div>
-            <div class="flex flex-col items-center">
-                <span class="text-[12px] font-bold text-navy-900 leading-none">${times[0]}</span>
-                <span class="text-[9px] text-slate-400 font-medium leading-tight mt-0.5">${times[1]}</span>
-            </div>
-        `;
+        cell.innerHTML = `<span class="lesson-number">${slot.id} PAM.</span><strong>${times[0]}</strong><span class="lesson-end">${times[1]}</span>`;
         headerRow.appendChild(cell);
     });
     container.appendChild(headerRow);
@@ -852,17 +858,18 @@ function renderEliteGrid(container, monday) {
 
         const row = document.createElement('div');
         row.className = 'elite-body-row';
-        if (isToday) row.style.backgroundColor = '#fffbeb'; // Highlight today row slightly
+        if (isToday) row.classList.add('is-today');
+        if (i > 4) row.classList.add('is-weekend');
 
         // Day Cell
         const dayCell = document.createElement('div');
         dayCell.className = 'elite-day-cell';
-        if (isToday) dayCell.style.color = '#d97706';
+
 
         // Format: MON 26
         const dayNameShort = DAYS_SHORT[i].toUpperCase();
         const dayNum = curDate.getDate();
-        dayCell.innerHTML = `<span class="day-name">${dayNameShort}</span><span class="day-date">${dayNum}</span>`;
+        dayCell.innerHTML = `<span class="day-name">${dayNameShort}</span><span class="day-date">${String(curDate.getMonth() + 1).padStart(2, '0')}.${String(dayNum).padStart(2, '0')}</span>`;
         row.appendChild(dayCell);
 
         // Content Cell (Grid + Modules)
@@ -872,7 +879,7 @@ function renderEliteGrid(container, monday) {
         // Background Grid Lines
         const gridLines = document.createElement('div');
         gridLines.className = 'elite-grid-lines';
-        for (let k = 0; k < 13; k++) {
+        for (let k = 0; k < LESSON_SLOTS.length; k++) {
             const line = document.createElement('div');
             line.className = 'elite-line';
             gridLines.appendChild(line);
@@ -887,48 +894,22 @@ function renderEliteGrid(container, monday) {
             const block = document.createElement('div');
             block.className = 'elite-block';
 
-            block.style.gridColumn = `${ev.start + 1} / span ${ev.len}`;
+            block.style.gridColumn = `${ev.start} / span ${Math.min(ev.len, 13 - ev.start)}`;
             block.style.gridRow = String(ev.rowIndex + 1);
             block.title = `${ev.mod.name} · ${ev.mod.group} · ${formatRange(ev.start, ev.len)}${ev.mod.teacher ? ' · ' + ev.mod.teacher : ''}`;
-            block.style.borderColor = ev.mod.color || '#0f172a';
-            // Use lighter background for the block based on module color (simple opacity simulation via border color usage or fixed)
-            // Since we can't easily hex2rgba here without helper, let's use a trick or just simple style
-            // We'll set a background with opacity using inline style trick if possible, or just stay white but add thicker border/visuals
-            // User requested "visually seen", so let's add background-color.
-            block.style.backgroundColor = ev.mod.color ? ev.mod.color + '20' : '#f1f5f9'; // 20 is ~12% opacity hex
-            block.style.borderLeftWidth = '4px';
-
+            block.style.setProperty('--module-color', ev.mod.color || '#475569');
+            block.tabIndex = 0;
+            block.setAttribute('aria-label', block.title);
             if (ev.isOverride) block.classList.add('is-override');
             if (ev.isNew) block.classList.add('is-new');
             if (ev.isRemoved) block.classList.add('is-removed');
 
-            // Block Content
-            const timeRange = formatRange(ev.start, ev.len).split(' ')[0]; // Just times
-            const teacher = ev.mod.teacher ? `<span class="material-symbols-outlined text-[10px]">person</span> ${escapeHTML(ev.mod.teacher.split(' ')[0])}` : '';
-
-            let statusIcon = '';
-            if (ev.isRemoved) statusIcon = '<span class="material-symbols-outlined text-[10px] text-red-700">cancel</span> ';
-
-            // Calculate Lesson Numbers string (e.g. "1-2 pam.")
-            // ev.start is 0-based index? No, LESSON_SLOTS ids.
-            // slot.id is 0,1,2...
-            // If start=1 (08:00), len=2, then valid slots are 1 and 2.
-            const startNum = ev.start;
-            const endNum = ev.start + ev.len - 1;
-            const pamStr = (startNum === endNum) ? `${startNum} pam.` : `${startNum}-${endNum} pam.`;
-
+            const timeRange = formatRange(ev.start, ev.len).split(' ')[0];
             block.innerHTML = `
-                <div class="flex flex-wrap gap-x-2 justify-between items-start">
-                    <div class="time text-[10px] font-extrabold text-navy-900">${pamStr}</div>
-                    <div class="time text-[9px] opacity-70">${timeRange}</div>
-                </div>
-                <div class="title font-bold text-xs mt-1 leading-tight" title="${escapeHTML(ev.mod.name)}">${statusIcon}${escapeHTML(ev.mod.name)}</div>
-                <div class="details mt-1">
-                    <span class="bg-white/50 px-1 rounded text-[10px] font-semibold">${escapeHTML(ev.mod.group)}</span>
-                    ${teacher ? '<span>' + teacher + '</span>' : ''}
-                </div>
+                <div class="lesson-meta"><span class="lesson-group">${escapeHTML(ev.mod.group)}</span><span class="lesson-range">${timeRange}</span></div>
+                <div class="lesson-title">${escapeHTML(ev.mod.name)}</div>
+                <div class="lesson-teacher">${escapeHTML(ev.mod.teacher || '')}</div>
             `;
-
             contentCell.appendChild(block);
         });
 
@@ -936,12 +917,8 @@ function renderEliteGrid(container, monday) {
         if (isToday) {
             const now = new Date();
             const nowMins = now.getHours() * 60 + now.getMinutes();
-            const startMins = 7 * 60;
-            const endMins = 19 * 60 + 25;
-            const totalRange = endMins - startMins;
-            const currentPos = Math.max(0, Math.min(100, (nowMins - startMins) / totalRange * 100));
-
-            if (nowMins >= startMins && nowMins <= endMins) {
+            const currentPos = currentTimelinePosition(nowMins);
+            if (currentPos !== null) {
                 const line = document.createElement('div');
                 line.className = 'now-indicator-line';
                 line.style.left = `${currentPos}% `;
