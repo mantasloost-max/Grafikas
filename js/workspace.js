@@ -19,6 +19,7 @@ function showNotice(message, canUndo = false) {
         button.onclick = () => {
             state = JSON.parse(undoState); localStorage.setItem(storageKey, undoState); undoState = null;
             renderFilters(); renderAll(); renderVacationsList(); showNotice('Pakeitimas atšauktas.');
+            if (window.updateGitHubStatus) window.updateGitHubStatus();
         };
         toast.appendChild(button);
     }

@@ -104,6 +104,7 @@ function save() {
     catch (error) { showNotice('Nepavyko išsaugoti. Eksportuokite planą į failą.'); throw error; }
     if (previous !== next) { undoState = previous; showNotice('Išsaugota šioje naršyklėje.', true); }
     renderFilters(); refreshWorkspace();
+    if (window.updateGitHubStatus) window.updateGitHubStatus();
 }
 function load() { try { return JSON.parse(localStorage.getItem(storageKey)); } catch (e) { return null; } }
 
