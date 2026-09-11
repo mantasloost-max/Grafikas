@@ -1,0 +1,240 @@
+{
+  "modules": [
+    {
+      "id": "m1789030688091",
+      "name": "Įvadas į profesija",
+      "group": "JP26PV/TV",
+      "teacher": "Mantas Šeštokas",
+      "target": 21,
+      "start": "2026-09-07",
+      "color": "#3b82f6",
+      "sched": [
+        4,
+        6,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "schedStarts": [
+        9,
+        7,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "overrides": []
+    },
+    {
+      "id": "m1789030818490",
+      "name": "Informacinių sistemų projektavimas ir kūrimas PHP programavimo kalba",
+      "group": "JP26PV/TV",
+      "teacher": "Mantas Šeštokas",
+      "target": 440,
+      "start": "2026-09-21",
+      "color": "#3bf783",
+      "sched": [
+        3,
+        6,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "schedStarts": [
+        10,
+        7,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "overrides": [
+        {
+          "from": "2026-09-28",
+          "sched": [
+            4,
+            6,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "schedStarts": [
+            9,
+            7,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "from": "2026-11-06",
+          "sched": [
+            3,
+            6,
+            0,
+            0,
+            10,
+            0,
+            0
+          ],
+          "schedStarts": [
+            10,
+            7,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "from": "2026-11-09",
+          "sched": [
+            10,
+            6,
+            0,
+            0,
+            10,
+            0,
+            0
+          ],
+          "schedStarts": [
+            1,
+            7,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "id": "m1789031182363",
+      "name": "Pokyčių valdymas",
+      "group": "IN24V",
+      "teacher": "Mantas Šeštokas",
+      "target": 220,
+      "start": "2026-09-02",
+      "color": "#f73b57",
+      "sched": [
+        8,
+        0,
+        8,
+        0,
+        8,
+        0,
+        0
+      ],
+      "schedStarts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "overrides": []
+    },
+    {
+      "id": "m1789031490586",
+      "name": "Filmavimas bepiločiais",
+      "group": "MU24V",
+      "teacher": "Mantas Šeštokas",
+      "target": 110,
+      "start": "2026-09-03",
+      "color": "#4d2259",
+      "sched": [
+        0,
+        6,
+        0,
+        6,
+        0,
+        0,
+        0
+      ],
+      "schedStarts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "overrides": []
+    },
+    {
+      "id": "m1789032280027",
+      "name": "Firmavimas bepiločiu",
+      "group": "12MTEKSDNR",
+      "teacher": "Mantas Šeštokas",
+      "target": 110,
+      "start": "2027-01-04",
+      "color": "#595022",
+      "sched": [
+        4,
+        0,
+        4,
+        0,
+        0,
+        0,
+        0
+      ],
+      "schedStarts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "overrides": []
+    },
+    {
+      "repeatWeeks": 2,
+      "id": "m1789039338248",
+      "name": "Filmavimas bepillociais",
+      "group": "MU24V",
+      "teacher": "Mantas Šeštokas",
+      "target": 110,
+      "start": "2026-09-16",
+      "color": "#eed849",
+      "sched": [
+        0,
+        0,
+        6,
+        0,
+        0,
+        0,
+        0
+      ],
+      "schedStarts": [
+        1,
+        1,
+        7,
+        1,
+        1,
+        1,
+        1
+      ],
+      "overrides": []
+    }
+  ],
+  "vacations": [],
+  "semEnd": "",
+  "sem2Start": "2026-02-02"
+}
