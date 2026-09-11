@@ -1517,7 +1517,7 @@ function openYearlyGridDialog() {
     // HEADER HTML
     // Row 1: Fixed Cols (rowspan 3) + Semester Headers
     let htmlSem = `<th class="y-col-fixed" rowspan="3" style="z-index:40; top:0; height:72px;">Modulis</th>
-                   <th class="y-col-fixed y-teacher" rowspan="3" style="z-index:40; top:0; height:72px;">Dėstytojas</th>
+
                    <th class="y-col-fixed y-target" rowspan="3" style="z-index:40; top:0; height:72px;">Tikslas</th>
                    <th class="y-col-fixed y-sem1" rowspan="3" style="z-index:40; top:0; height:72px;">I pusm.</th>
                    <th class="y-col-fixed y-sem2" rowspan="3" style="z-index:40; top:0; height:72px;">II pusm.</th>
@@ -1581,8 +1581,8 @@ function openYearlyGridDialog() {
 
     const table = document.createElement('table');
     table.className = 'y-table';
-    table.style.minWidth = `${470 + (weeks.length + (extraEndColumn ? 1 : 0)) * 20}px`;
-    table.innerHTML = `<colgroup><col style="width:220px"><col style="width:100px"><col style="width:50px"><col style="width:50px"><col style="width:50px">${weeks.map(() => '<col>').join('')}${extraEndColumn ? '<col>' : ''}</colgroup><thead>
+    table.style.minWidth = `${370 + (weeks.length + (extraEndColumn ? 1 : 0)) * 20}px`;
+    table.innerHTML = `<colgroup><col style="width:220px"><col style="width:50px"><col style="width:50px"><col style="width:50px">${weeks.map(() => '<col>').join('')}${extraEndColumn ? '<col>' : ''}</colgroup><thead>
         <tr>${htmlSem}</tr>
         <tr>${htmlMonth}</tr>
         <tr>${htmlWeek}</tr>
@@ -1669,7 +1669,7 @@ function openYearlyGridDialog() {
             </div>
             ${statusMsg ? `<div class="text-[9px] ${statusColor} font-bold mt-1">${statusMsg}</div>` : ''}
         </td>
-                       <td class="y-col-fixed y-teacher">${escapeHTML(m.teacher || '')}</td>
+
                        <td class="y-col-fixed y-target">${m.target}</td>
                        <td class="y-col-fixed y-sem1 font-bold text-slate-700">${sem1 || ''}</td>
                        <td class="y-col-fixed y-sem2 font-bold text-slate-700">${sem2 || ''}</td>`;
@@ -1756,12 +1756,12 @@ function openYearlyGridDialog() {
 
     if (!tbody.children.length) {
         const empty = document.createElement('tr');
-        empty.innerHTML = `<td colspan="${5 + weeks.length + (extraEndColumn ? 1 : 0)}" class="annual-empty-state"><strong>Nėra rodomų modulių</strong><span>Pridėkite modulį arba pakeiskite pasirinktus filtrus.</span></td>`;
+        empty.innerHTML = `<td colspan="${4 + weeks.length + (extraEndColumn ? 1 : 0)}" class="annual-empty-state"><strong>Nėra rodomų modulių</strong><span>Pridėkite modulį arba pakeiskite pasirinktus filtrus.</span></td>`;
         tbody.appendChild(empty);
     }
     table.appendChild(tbody);
     const footer = document.createElement('tfoot');
-    footer.innerHTML = `<tr><td class="y-col-fixed">Iš viso</td><td class="y-col-fixed y-teacher"></td><td class="y-col-fixed y-target">${modulesFiltered().reduce((n,m) => n + Number(m.target || 0), 0)}</td><td class="y-col-fixed y-sem1">${totalSem1}</td><td class="y-col-fixed y-sem2">${totalSem2}</td>${weekTotals.map(n => `<td>${n || '—'}</td>`).join('')}</tr>`;
+    footer.innerHTML = `<tr><td class="y-col-fixed">Iš viso</td><td class="y-col-fixed y-target">${modulesFiltered().reduce((n,m) => n + Number(m.target || 0), 0)}</td><td class="y-col-fixed y-sem1">${totalSem1}</td><td class="y-col-fixed y-sem2">${totalSem2}</td>${weekTotals.map(n => `<td>${n || '—'}</td>`).join('')}</tr>`;
     table.appendChild(footer);
     container.appendChild(table);
 

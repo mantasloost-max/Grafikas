@@ -80,3 +80,9 @@
 #yGridContainer .annual-edit-cell > button:focus-visible { outline: 2px solid #6366f1; outline-offset: -2px; }
 #yGridContainer .y-table tbody tr:hover td.y-col-fixed { background: #f8fafc !important; }
 #yGridContainer .y-table tbody .y-teacher { font-size: 10px; color: #64748b; }
+
+/* Four pinned columns: module, target and two semester totals. */
+#yGridContainer .y-col-fixed.y-target, #yGridContainer .y-col-fixed.y-sem1, #yGridContainer .y-col-fixed.y-sem2 { width:50px;min-width:50px;max-width:50px;text-align:center!important;padding-left:4px!important;padding-right:4px!important;font-weight:600;color:#334155; }
+#yGridContainer .y-col-fixed.y-target { left:220px; }
+#yGridContainer .y-col-fixed.y-sem1 { left:270px; }
+#yGridContainer .y-col-fixed.y-sem2 { left:320px;border-right:2px solid #cbd5e1; }
