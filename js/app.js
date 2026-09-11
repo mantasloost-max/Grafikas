@@ -1663,9 +1663,9 @@ function openYearlyGridDialog() {
         const borderStyle = `border-left: 4px solid ${m.color || '#cbd5e1'};`;
 
         let rowHtml = `<td class="y-col-fixed cursor-pointer hover:brightness-95 relative group" onclick="openEditModuleDialog('${m.id}')" title="${escapeHTML(m.name)}" style="${borderStyle} ${bgStyle}">
-            <div class="flex items-center h-full w-full font-semibold text-navy-900 group-hover:text-blue-900 transition-colors whitespace-normal text-left">
+            <div class="annual-module-label">
                 <span class="material-symbols-outlined text-[10px] mr-1 align-middle opacity-0 group-hover:opacity-100 flex-shrink-0">edit</span>
-                <span>${escapeHTML(m.name)}</span>
+                <span class="annual-module-name">${escapeHTML(m.name)}</span>
             </div>
             ${statusMsg ? `<div class="text-[9px] ${statusColor} font-bold mt-1">${statusMsg}</div>` : ''}
         </td>
@@ -1741,6 +1741,7 @@ function openYearlyGridDialog() {
             </td>`;
         }
 
+        tr.style.setProperty("--module-color", /^#[0-9a-f]{6}$/i.test(m.color || "") ? m.color : "#64748b");
         tr.innerHTML = rowHtml;
         tr.querySelectorAll('button[data-week]').forEach(button => {
             button.onclick = () => openAnnualWeekEditor(m, button.dataset.week, () => {
